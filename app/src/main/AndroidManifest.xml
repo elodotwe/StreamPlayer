@@ -18,20 +18,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity android:name=".LockScreenActivity"></activity>
+        <activity android:name=".LockScreenActivity" />
 
         <service
             android:name=".SdlService"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
 
-        <receiver android:name="com.jacobarau.streamplayer.SdlReceiver" >
+        <receiver android:name=".SdlReceiver">
             <intent-filter>
                 <action android:name="android.bluetooth.device.action.ACL_CONNECTED" />
                 <action android:name="android.media.AUDIO_BECOMING_NOISY" />
             </intent-filter>
         </receiver>
+
+        <service
+            android:name=".StreamingService"
+            android:enabled="true"
+            android:exported="true"></service>
     </application>
 
 </manifest>

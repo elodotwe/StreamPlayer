@@ -71,6 +71,7 @@ import com.smartdevicelink.proxy.rpc.SystemRequestResponse;
 import com.smartdevicelink.proxy.rpc.UnsubscribeButtonResponse;
 import com.smartdevicelink.proxy.rpc.UnsubscribeVehicleDataResponse;
 import com.smartdevicelink.proxy.rpc.UpdateTurnListResponse;
+import com.smartdevicelink.proxy.rpc.enums.AudioStreamingState;
 import com.smartdevicelink.proxy.rpc.enums.FileType;
 import com.smartdevicelink.proxy.rpc.enums.HMILevel;
 import com.smartdevicelink.proxy.rpc.enums.LockScreenStatus;
@@ -323,6 +324,27 @@ public class SdlService extends Service implements IProxyListenerALM{
 			if (notification.getFirstRun()) {
 				// send welcome message if applicable
 //				performWelcomeMessage();
+                AddCommand command = new AddCommand();
+                MenuParams params = new MenuParams();
+                params.setMenuName("Play");
+                command = new AddCommand();
+                command.setCmdID(1);
+                command.setMenuParams(params);
+                command.setVrCommands(Arrays.asList(new String[]{"Play"}));
+                sendRpcRequest(command);
+                command = new AddCommand();
+                params = new MenuParams();
+                params.setMenuName("Pause");
+                command = new AddCommand();
+                command.setCmdID(2);
+                command.setMenuParams(params);
+                command.setVrCommands(Arrays.asList(new String[]{"Pause"}));
+                sendRpcRequest(command);
+
+                Intent intent = new Intent(this, StreamingService.class);
+                intent.setAction(StreamingService.ACTION_START);
+                intent.putExtra("url","http://188.65.154.167:8500");
+                startService(intent);
 			}
 			// Other HMI (Show, PerformInteraction, etc.) would go here
 		}
@@ -342,7 +364,11 @@ public class SdlService extends Service implements IProxyListenerALM{
 			}
 		}
 		
-		
+		if (notification.getAudioStreamingState() == AudioStreamingState.NOT_AUDIBLE) {
+            Intent intent = new Intent(this, StreamingService.class);
+            intent.setAction(StreamingService.ACTION_STOP);
+            startService(intent);
+        }
 		
 	}
 	
@@ -434,14 +460,21 @@ public class SdlService extends Service implements IProxyListenerALM{
 	@Override
 	public void onOnCommand(OnCommand notification){
 		Integer id = notification.getCmdID();
-//		if(id != null){
-//			switch(id){
-//			case TEST_COMMAND_ID:
-//				showTest();
-//				break;
-//			}
-//			//onAddCommandClicked(id);
-//		}
+		if(id != null){
+			switch(id){
+                case 1: //PLAY
+                    Intent intent = new Intent(this, StreamingService.class);
+                    intent.setAction(StreamingService.ACTION_START);
+                    intent.putExtra("url", "http://188.65.154.167:8500");
+                    startService(intent);
+                    break;
+                case 2: //STOP
+                    intent = new Intent(this, StreamingService.class);
+                    intent.setAction(StreamingService.ACTION_STOP);
+                    startService(intent);
+			}
+			//onAddCommandClicked(id);
+		}
 	}
 
 	/**
