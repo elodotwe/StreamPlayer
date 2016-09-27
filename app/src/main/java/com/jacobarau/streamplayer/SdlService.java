@@ -169,7 +169,7 @@ public class SdlService extends Service implements IProxyListenerALM{
 	public void startProxy() {
 		if (proxy == null) {
 			try {
-                BaseTransportConfig xprt = new TCPTransportConfig(12345, "192.168.1.6", true); //.11 is VM, .6 is ALE
+                BaseTransportConfig xprt = new TCPTransportConfig(12345, "19.76.6.234", true); //.11 is VM, .6 is ALE
 				proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID);//, xprt);
 
 			} catch (SdlException e) {

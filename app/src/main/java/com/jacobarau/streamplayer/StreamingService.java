@@ -7,18 +7,42 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.LoadControl;
+import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.trackselection.AdaptiveVideoTrackSelection;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.trackselection.TrackSelector;
+import com.google.android.exoplayer2.upstream.BandwidthMeter;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+import com.google.android.exoplayer2.upstream.HttpDataSource;
+import com.google.android.exoplayer2.util.Util;
+
 import java.io.IOException;
 
-public class StreamingService extends Service implements MediaPlayer.OnPreparedListener {
+public class StreamingService extends Service {
     final String TAG = "StreamingService";
     private static final String ACTION_START = "com.jacobarau.streamplayer.action.START";
     private static final String ACTION_STOP = "com.jacobarau.streamplayer.action.STOP";
 
-    MediaPlayer mMediaPlayer = null;
+    SimpleExoPlayer player = null;
     public static boolean isStreaming = false;
+    private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
+
+    private DataSource.Factory mediaDataSourceFactory;
 
     public static void startPlaying(Context ctx, String url) {
         if (!isStreaming) {
@@ -48,54 +72,84 @@ public class StreamingService extends Service implements MediaPlayer.OnPreparedL
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
+
+    /**
+     * Returns a new DataSource factory.
+     *
+     * @param useBandwidthMeter Whether to set {@link #BANDWIDTH_METER} as a listener to the new
+     *     DataSource factory.
+     * @return A new DataSource factory.
+     */
+    private DataSource.Factory buildDataSourceFactory(boolean useBandwidthMeter) {
+        return new DefaultDataSourceFactory(this, useBandwidthMeter ? BANDWIDTH_METER : null,
+                buildHttpDataSourceFactory(useBandwidthMeter));
+    }
+
+    /**
+     * Returns a new HttpDataSource factory.
+     *
+     * @param useBandwidthMeter Whether to set {@link #BANDWIDTH_METER} as a listener to the new
+     *     DataSource factory.
+     * @return A new HttpDataSource factory.
+     */
+    private HttpDataSource.Factory buildHttpDataSourceFactory(boolean useBandwidthMeter) {
+        return new DefaultHttpDataSourceFactory(Util.getUserAgent(this, "ExoPlayerDemo"), useBandwidthMeter ? BANDWIDTH_METER : null);
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "onStartCommand with intent " + intent + ", flags " + flags + ", startId " + startId);
-        NotificationManager mgr = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+        NotificationManager mgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (intent.getAction() == ACTION_START) {
+            Log.i(TAG, "START received");
             Notification not = new Notification.Builder(this).setContentTitle("Stream Player").setContentText("Playing streaming media").setOngoing(true).build();
             mgr.notify(1, not);
 
-            if (mMediaPlayer == null) {
-                mMediaPlayer = new MediaPlayer();
-                mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                try {
-                    Log.i(TAG, "About to set data source");
-                    mMediaPlayer.setDataSource(intent.getStringExtra("url"));
-                    Log.i(TAG, "Data source set. About to prepare");
-                    mMediaPlayer.setOnPreparedListener(this);
-                    mMediaPlayer.prepareAsync();
-                    Log.i(TAG, "Prepare async called");
-                } catch (IOException e) {
-                    Log.e(TAG, "Unable to set data source, it failed");
-                    e.printStackTrace();
-                    return 0;
-                }
+            if (player == null) {
+                Log.i(TAG, "player is null");
+                // 1. Create a default TrackSelector
+                Handler mainHandler = new Handler();
+                BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
+                TrackSelection.Factory videoTrackSelectionFactory =
+                        new AdaptiveVideoTrackSelection.Factory(bandwidthMeter);
+                TrackSelector trackSelector =
+                        new DefaultTrackSelector(mainHandler, videoTrackSelectionFactory);
+
+// 2. Create a default LoadControl
+                LoadControl loadControl = new DefaultLoadControl();
+
+// 3. Create the player
+                player =
+                        ExoPlayerFactory.newSimpleInstance(this, trackSelector, loadControl);
+
+
+                mediaDataSourceFactory = buildDataSourceFactory(true);
+
+                MediaSource ms = new ExtractorMediaSource(Uri.parse(intent.getStringExtra("url")), mediaDataSourceFactory, new DefaultExtractorsFactory(),
+                        mainHandler, null);
+
+
+                Log.i(TAG, "About to prepare");
+                player.prepare(ms);
+                Log.i(TAG, "Prepare completed");
+                player.setPlayWhenReady(true);
+                Log.i(TAG, "Reached end of player null block");
             }
+
         }
 
         if (intent.getAction() == ACTION_STOP) {
-            if (mMediaPlayer != null) {
-                mMediaPlayer.stop();
-                mMediaPlayer = null;
+            if (player != null) {
+                player.setPlayWhenReady(false);
+                player.stop();
+                player = null;
             }
             mgr.cancel(1);
             this.stopSelf();
         }
 
 
-
         return START_STICKY;
-    }
-
-    @Override
-    public void onPrepared(MediaPlayer mp) {
-        if (mMediaPlayer == null) {
-            Log.i(TAG, "mMediaPlayer was null, just bailing out (because probs someone sent ACTION_STOP)");
-        } else {
-            Log.i(TAG, "actually prepared, starting");
-            mMediaPlayer.start();
-        }
     }
 
     @Override

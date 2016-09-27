@@ -20,5 +20,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
+//        StreamingService.startPlaying(this, "http://188.65.154.167:8500");
     }
 }
