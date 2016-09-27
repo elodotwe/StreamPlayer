@@ -3,6 +3,7 @@ package com.jacobarau.streamplayer;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
+import android.provider.MediaStore;
 import android.util.Log;
 
 import com.smartdevicelink.exception.SdlException;
@@ -57,6 +58,7 @@ import com.smartdevicelink.proxy.rpc.ResetGlobalPropertiesResponse;
 import com.smartdevicelink.proxy.rpc.ScrollableMessageResponse;
 import com.smartdevicelink.proxy.rpc.SendLocationResponse;
 import com.smartdevicelink.proxy.rpc.SetAppIconResponse;
+import com.smartdevicelink.proxy.rpc.SetDisplayLayout;
 import com.smartdevicelink.proxy.rpc.SetDisplayLayoutResponse;
 import com.smartdevicelink.proxy.rpc.SetGlobalPropertiesResponse;
 import com.smartdevicelink.proxy.rpc.SetMediaClockTimerResponse;
@@ -65,6 +67,7 @@ import com.smartdevicelink.proxy.rpc.ShowResponse;
 import com.smartdevicelink.proxy.rpc.SliderResponse;
 import com.smartdevicelink.proxy.rpc.SpeakResponse;
 import com.smartdevicelink.proxy.rpc.StreamRPCResponse;
+import com.smartdevicelink.proxy.rpc.SubscribeButton;
 import com.smartdevicelink.proxy.rpc.SubscribeButtonResponse;
 import com.smartdevicelink.proxy.rpc.SubscribeVehicleDataResponse;
 import com.smartdevicelink.proxy.rpc.SystemRequestResponse;
@@ -72,6 +75,7 @@ import com.smartdevicelink.proxy.rpc.UnsubscribeButtonResponse;
 import com.smartdevicelink.proxy.rpc.UnsubscribeVehicleDataResponse;
 import com.smartdevicelink.proxy.rpc.UpdateTurnListResponse;
 import com.smartdevicelink.proxy.rpc.enums.AudioStreamingState;
+import com.smartdevicelink.proxy.rpc.enums.ButtonName;
 import com.smartdevicelink.proxy.rpc.enums.FileType;
 import com.smartdevicelink.proxy.rpc.enums.HMILevel;
 import com.smartdevicelink.proxy.rpc.enums.LockScreenStatus;
@@ -86,6 +90,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class SdlService extends Service implements IProxyListenerALM{
 
@@ -96,6 +101,16 @@ public class SdlService extends Service implements IProxyListenerALM{
 	
 	private static final String ICON_FILENAME 			= "stream_player.png";
 	private int iconCorrelationId;
+
+    private final String Radioseven = "http://188.65.154.167:8500";
+
+    enum StreamState {
+        STOPPED,
+        PLAYING,
+        TEMPORARILY_PAUSED
+    }
+
+    StreamState state = StreamState.STOPPED;
 
 	List<String> remoteFiles;
 	
@@ -110,7 +125,6 @@ public class SdlService extends Service implements IProxyListenerALM{
 	private boolean lockscreenDisplayed = false;
 
 	private boolean firstNonHmiNone = true;
-	private boolean isVehicleDataSubscribed = false;
 	
 	
 	
@@ -161,8 +175,8 @@ public class SdlService extends Service implements IProxyListenerALM{
 	public void startProxy() {
 		if (proxy == null) {
 			try {
-                BaseTransportConfig xprt = new TCPTransportConfig(12345, "192.168.1.6", true);
-				proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID, xprt);
+                BaseTransportConfig xprt = new TCPTransportConfig(12345, "192.168.1.6", true); //.11 is VM, .6 is ALE
+				proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID);//, xprt);
 
 			} catch (SdlException e) {
 				e.printStackTrace();
@@ -185,7 +199,6 @@ public class SdlService extends Service implements IProxyListenerALM{
 			//LockScreenManager.clearLockScreen();
 		}
 		this.firstNonHmiNone = true;
-		this.isVehicleDataSubscribed = false;
 		
 	}
 
@@ -194,7 +207,6 @@ public class SdlService extends Service implements IProxyListenerALM{
 			try {
 				proxy.resetProxy();
 				this.firstNonHmiNone = true;
-				this.isVehicleDataSubscribed = false;
 			} catch (SdlException e1) {
 				e1.printStackTrace();
 				//something goes wrong, & the proxy returns as null, stop the service.
@@ -315,6 +327,7 @@ public class SdlService extends Service implements IProxyListenerALM{
 
 		clearLockScreen();
 
+        StreamingService.stopPlaying(this);
 		stopSelf();
 	}
 
@@ -322,8 +335,6 @@ public class SdlService extends Service implements IProxyListenerALM{
 	public void onOnHMIStatus(OnHMIStatus notification) {
 		if(notification.getHmiLevel().equals(HMILevel.HMI_FULL)){			
 			if (notification.getFirstRun()) {
-				// send welcome message if applicable
-//				performWelcomeMessage();
                 AddCommand command = new AddCommand();
                 MenuParams params = new MenuParams();
                 params.setMenuName("Play");
@@ -341,10 +352,18 @@ public class SdlService extends Service implements IProxyListenerALM{
                 command.setVrCommands(Arrays.asList(new String[]{"Pause"}));
                 sendRpcRequest(command);
 
-                Intent intent = new Intent(this, StreamingService.class);
-                intent.setAction(StreamingService.ACTION_START);
-                intent.putExtra("url","http://188.65.154.167:8500");
-                startService(intent);
+//                SetDisplayLayout layout = new SetDisplayLayout();
+//                layout.setDisplayLayout("MEDIA");
+//                sendRpcRequest(layout);
+
+                state = StreamState.TEMPORARILY_PAUSED;
+
+                //TODO: There has to be a way to show a play and a pause icon separately. Perhaps
+                //as part of a Show request? Unsure. This shows a single button with a
+                //play/pause icon combined. It does work, but is ugly.
+                SubscribeButton but = new SubscribeButton();
+                but.setButtonName(ButtonName.OK);
+                sendRpcRequest(but);
 			}
 			// Other HMI (Show, PerformInteraction, etc.) would go here
 		}
@@ -363,13 +382,19 @@ public class SdlService extends Service implements IProxyListenerALM{
 				uploadImages();
 			}
 		}
-		
-		if (notification.getAudioStreamingState() == AudioStreamingState.NOT_AUDIBLE) {
-            Intent intent = new Intent(this, StreamingService.class);
-            intent.setAction(StreamingService.ACTION_STOP);
-            startService(intent);
+
+		if (notification.getAudioStreamingState().equals(AudioStreamingState.NOT_AUDIBLE)) {
+            if (state.equals(StreamState.PLAYING)) {
+                StreamingService.stopPlaying(this);
+                state = StreamState.TEMPORARILY_PAUSED;
+            }
+        } else {
+            if (state.equals(StreamState.TEMPORARILY_PAUSED) || state.equals(StreamState.PLAYING)) {
+                state = StreamState.PLAYING;
+                StreamingService.startPlaying(this, Radioseven);
+            }
         }
-		
+		Log.i(TAG, "HMI status is " + notification.getAudioStreamingState() + ", " + notification.getHmiLevel() + ", " + notification.getSystemContext() + ", first run " + notification.getFirstRun());
 	}
 	
 	/**
@@ -459,19 +484,17 @@ public class SdlService extends Service implements IProxyListenerALM{
 
 	@Override
 	public void onOnCommand(OnCommand notification){
+        Log.i(TAG, "onOnCommand: " + notification.getCmdID());
 		Integer id = notification.getCmdID();
 		if(id != null){
 			switch(id){
                 case 1: //PLAY
-                    Intent intent = new Intent(this, StreamingService.class);
-                    intent.setAction(StreamingService.ACTION_START);
-                    intent.putExtra("url", "http://188.65.154.167:8500");
-                    startService(intent);
+                    state = StreamState.PLAYING;
+                    StreamingService.startPlaying(this, Radioseven);
                     break;
                 case 2: //STOP
-                    intent = new Intent(this, StreamingService.class);
-                    intent.setAction(StreamingService.ACTION_STOP);
-                    startService(intent);
+                    state = StreamState.STOPPED;
+                    StreamingService.stopPlaying(this);
 			}
 			//onAddCommandClicked(id);
 		}
@@ -513,7 +536,6 @@ public class SdlService extends Service implements IProxyListenerALM{
 	public void onSubscribeVehicleDataResponse(SubscribeVehicleDataResponse response) {
 		if(response.getSuccess()){
 			Log.i(TAG, "Subscribed to vehicle data");
-			this.isVehicleDataSubscribed = true;
 		}
 	}
 	
@@ -596,7 +618,15 @@ public class SdlService extends Service implements IProxyListenerALM{
 
 	@Override
 	public void onOnButtonPress(OnButtonPress notification) {
-		// TODO Auto-generated method stub
+		Log.i(TAG, "onOnButtonPress: " + notification.getButtonName());
+
+        if (notification.getButtonName().equals(ButtonName.OK)) {
+            if (StreamingService.isStreaming) {
+                StreamingService.stopPlaying(this);
+            } else {
+                StreamingService.startPlaying(this, Radioseven);
+            }
+        }
 	}
 
 	@Override

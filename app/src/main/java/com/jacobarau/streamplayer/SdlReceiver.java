@@ -23,6 +23,7 @@ public class SdlReceiver  extends BroadcastReceiver {
 		}
 		else if (intent.getAction().equals(android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY)) {
 			// signal your service to stop playback
+			//TODO
 		}
 	}
 }
