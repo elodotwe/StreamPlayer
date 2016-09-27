@@ -104,13 +104,7 @@ public class SdlService extends Service implements IProxyListenerALM{
 
     private final String Radioseven = "http://188.65.154.167:8500";
 
-    enum StreamState {
-        STOPPED,
-        PLAYING,
-        TEMPORARILY_PAUSED
-    }
-
-    StreamState state = StreamState.STOPPED;
+    boolean userWantsStreaming = false;
 
 	List<String> remoteFiles;
 	
@@ -356,7 +350,7 @@ public class SdlService extends Service implements IProxyListenerALM{
 //                layout.setDisplayLayout("MEDIA");
 //                sendRpcRequest(layout);
 
-                state = StreamState.TEMPORARILY_PAUSED;
+                userWantsStreaming = true;
 
                 //TODO: There has to be a way to show a play and a pause icon separately. Perhaps
                 //as part of a Show request? Unsure. This shows a single button with a
@@ -384,14 +378,14 @@ public class SdlService extends Service implements IProxyListenerALM{
 		}
 
 		if (notification.getAudioStreamingState().equals(AudioStreamingState.NOT_AUDIBLE)) {
-            if (state.equals(StreamState.PLAYING)) {
+            if (userWantsStreaming) {
                 StreamingService.stopPlaying(this);
-                state = StreamState.TEMPORARILY_PAUSED;
             }
         } else {
-            if (state.equals(StreamState.TEMPORARILY_PAUSED) || state.equals(StreamState.PLAYING)) {
-                state = StreamState.PLAYING;
-                StreamingService.startPlaying(this, Radioseven);
+            if (userWantsStreaming) {
+				if (!StreamingService.isStreaming) {
+                    StreamingService.startPlaying(this, Radioseven);
+                }
             }
         }
 		Log.i(TAG, "HMI status is " + notification.getAudioStreamingState() + ", " + notification.getHmiLevel() + ", " + notification.getSystemContext() + ", first run " + notification.getFirstRun());
@@ -489,11 +483,11 @@ public class SdlService extends Service implements IProxyListenerALM{
 		if(id != null){
 			switch(id){
                 case 1: //PLAY
-                    state = StreamState.PLAYING;
+                    userWantsStreaming = true;
                     StreamingService.startPlaying(this, Radioseven);
                     break;
                 case 2: //STOP
-                    state = StreamState.STOPPED;
+                    userWantsStreaming = false;
                     StreamingService.stopPlaying(this);
 			}
 			//onAddCommandClicked(id);
