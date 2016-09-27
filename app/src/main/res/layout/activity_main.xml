@@ -12,5 +12,26 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        android:text="Hello World!"
+        android:id="@+id/textView" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start playing"
+        android:id="@+id/startButt"
+        android:layout_below="@+id/textView"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="false"
+        android:nestedScrollingEnabled="false"
+        android:onClick="onStartButton" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Stop playing"
+        android:id="@+id/stopButt"
+        android:layout_below="@+id/startButt"
+        android:layout_alignEnd="@+id/startButt"
+        android:onClick="onStopButton" />
 </RelativeLayout>
