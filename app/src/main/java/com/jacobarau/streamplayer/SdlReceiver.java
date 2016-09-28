@@ -6,7 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-public class SdlReceiver  extends BroadcastReceiver {		
+public class SdlReceiver  extends BroadcastReceiver {
+	private final String TAG = "SdlReceiver";
 	public void onReceive(Context context, Intent intent) {
 		final BluetoothDevice bluetoothDevice = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
@@ -14,6 +15,7 @@ public class SdlReceiver  extends BroadcastReceiver {
 		
 		// if SYNC connected to phone via bluetooth, start service (which starts proxy)
 		if (intent.getAction().compareTo(BluetoothDevice.ACTION_ACL_CONNECTED) == 0) {
+			Log.i(TAG, "ACL_CONNECTED happened");
 			SdlService serviceInstance = SdlService.getInstance();
 			if (serviceInstance == null) {
 				Intent startIntent = new Intent(context, SdlService.class);

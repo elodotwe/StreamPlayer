@@ -183,6 +183,29 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         Log.i(TAG, "Player onPlayerStateChanged playWhenReady " + playWhenReady + ", playbackState " + playbackState);
         if (!playWhenReady && (playbackState == PlaybackState.STATE_PLAYING)) {
+            /*
+            Why sleep for 500msec here? Doesn't the user want to hear the music NOW, not in .5sec?
+            Well, let me tell you a story about ExoPlayer and I really not getting along.
+            For whatever reason, there's some fucking bullshit going on wherein I initialize and
+            start the player with no sleep whatsoever, and as a result my app shows up on SYNC,
+            the logcat lines all show up like the player THINKS it is playing (the input and
+            rendered buffers both accumulate) but no sound actually comes out! What the hell, says
+            I, as I tweak 27 different things and query Google for everything I can think of. I
+            want to call it a bug in ExoPlayer, but I'm not sure that's fair. Maybe there's
+            something about the switch from internal audio to Bluetooth? Fuck if I know, but I'm
+            done trying to figure it out for now. If we sleep for .5sec here, it seems to get us
+            out of this shitty race condition and into worky worky.
+
+            As an aside, SDL resumption was breaking 95% of the time before I made this change,
+            but now it has worked 3/3 attempts in the last 5 minutes. No clue why.
+
+            Oops, 3/4 now. Guess resumption is hard.
+             */
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                ;
+            }
             player.setPlayWhenReady(true);
 
         }
@@ -216,7 +239,7 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
         exec.schedule(new Runnable(){
             @Override
             public void run(){
-                Log.i(TAG, decoderCountToString(cntr));
+                Log.i(TAG, "Player " + decoderCountToString(cntr));
                 if (audioEnabled) {
                     exec.schedule(this, 1, TimeUnit.SECONDS);
                 }
