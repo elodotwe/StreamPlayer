@@ -7,15 +7,22 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.session.PlaybackState;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.LoadControl;
 import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.audio.AudioRendererEventListener;
+import com.google.android.exoplayer2.decoder.DecoderCounters;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
@@ -32,8 +39,11 @@ import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.util.Util;
 
 import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-public class StreamingService extends Service {
+public class StreamingService extends Service implements ExoPlayer.EventListener, AudioRendererEventListener {
     final String TAG = "StreamingService";
     private static final String ACTION_START = "com.jacobarau.streamplayer.action.START";
     private static final String ACTION_STOP = "com.jacobarau.streamplayer.action.STOP";
@@ -41,6 +51,8 @@ public class StreamingService extends Service {
     SimpleExoPlayer player = null;
     public static boolean isStreaming = false;
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
+
+    DecoderCounters cntr = null;
 
     private DataSource.Factory mediaDataSourceFactory;
 
@@ -118,9 +130,11 @@ public class StreamingService extends Service {
 // 2. Create a default LoadControl
                 LoadControl loadControl = new DefaultLoadControl();
 
+
 // 3. Create the player
                 player =
                         ExoPlayerFactory.newSimpleInstance(this, trackSelector, loadControl);
+                player.setAudioDebugListener(this);
 
 
                 mediaDataSourceFactory = buildDataSourceFactory(true);
@@ -129,16 +143,18 @@ public class StreamingService extends Service {
                         mainHandler, null);
 
 
+                player.addListener(this);
                 Log.i(TAG, "About to prepare");
                 player.prepare(ms);
                 Log.i(TAG, "Prepare completed");
-                player.setPlayWhenReady(true);
+
                 Log.i(TAG, "Reached end of player null block");
             }
 
         }
 
         if (intent.getAction() == ACTION_STOP) {
+            Log.i(TAG, "STOP received!");
             if (player != null) {
                 player.setPlayWhenReady(false);
                 player.stop();
@@ -156,5 +172,94 @@ public class StreamingService extends Service {
     public void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "destrooooooy :((");
+    }
+
+    @Override
+    public void onLoadingChanged(boolean isLoading) {
+        Log.i(TAG, "Player onLoadingChanged " + isLoading);
+    }
+
+    @Override
+    public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+        Log.i(TAG, "Player onPlayerStateChanged playWhenReady " + playWhenReady + ", playbackState " + playbackState);
+        if (!playWhenReady && (playbackState == PlaybackState.STATE_PLAYING)) {
+            player.setPlayWhenReady(true);
+
+        }
+    }
+
+    @Override
+    public void onTimelineChanged(Timeline timeline, Object manifest) {
+        Log.i(TAG, "Player onTimelineChanged timeline " + timeline + ", manifest " + manifest);
+    }
+
+    @Override
+    public void onPlayerError(ExoPlaybackException error) {
+        Log.i(TAG, "Player onPlayerError " + error);
+    }
+
+    @Override
+    public void onPositionDiscontinuity() {
+        Log.i(TAG, "Player onPositionDiscontinuity");
+    }
+
+    boolean audioEnabled = false;
+
+    @Override
+    public void onAudioEnabled(DecoderCounters counters) {
+        Log.i(TAG, "Player onAudioEnabled, " + counters);
+
+        audioEnabled = true;
+
+        final ScheduledExecutorService exec = Executors.newScheduledThreadPool(1);
+        this.cntr = counters;
+        exec.schedule(new Runnable(){
+            @Override
+            public void run(){
+                Log.i(TAG, decoderCountToString(cntr));
+                if (audioEnabled) {
+                    exec.schedule(this, 1, TimeUnit.SECONDS);
+                }
+            }
+        }, 1, TimeUnit.SECONDS);
+    }
+
+    public String decoderCountToString(DecoderCounters counters) {
+        String str = "";
+        str += "decoderInitCount " + String.valueOf(counters.decoderInitCount) + ", ";
+        str += "decoderReleaseCount " + counters.decoderReleaseCount + ", ";
+        str += "droppedOutputBuffer " + counters.droppedOutputBufferCount + ", ";
+        str += "inputBufferCount " + counters.inputBufferCount + ", ";
+        str += "maxConsecutiveDroppedOutputBufferCount " + counters.maxConsecutiveDroppedOutputBufferCount + ", ";
+        str += "renderedOutputBufferCount " + counters.renderedOutputBufferCount + ", ";
+        str += "skippedOutputBufferCount " + counters.skippedOutputBufferCount;
+
+        return str;
+    }
+
+    @Override
+    public void onAudioSessionId(int audioSessionId) {
+        Log.i(TAG, "Player onAudioSessionId: " + audioSessionId);
+    }
+
+    @Override
+    public void onAudioDecoderInitialized(String decoderName, long initializedTimestampMs, long initializationDurationMs) {
+        Log.i(TAG, "Player onAudioDecoderInitialized, decoderName " + decoderName + ", initializedTimestampMs " + initializedTimestampMs + ", initializationDurationMs " + initializationDurationMs);
+    }
+
+    @Override
+    public void onAudioInputFormatChanged(Format format) {
+        Log.i(TAG, "Player onAudioInputFormatChanged " + format);
+    }
+
+    @Override
+    public void onAudioTrackUnderrun(int bufferSize, long bufferSizeMs, long elapsedSinceLastFeedMs) {
+        Log.i(TAG, "Player onAudioTrackUnderrun bufferSize " + bufferSize + ", bufferSizeMs " + bufferSizeMs + ", elapsedSinceLastFeedMs " + elapsedSinceLastFeedMs);
+    }
+
+    @Override
+    public void onAudioDisabled(DecoderCounters counters) {
+        Log.i(TAG, "Player onAudioDisabled " + counters);
+        audioEnabled = false;
     }
 }
