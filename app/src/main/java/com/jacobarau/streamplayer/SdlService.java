@@ -3,7 +3,6 @@ package com.jacobarau.streamplayer;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
-import android.provider.MediaStore;
 import android.util.Log;
 
 import com.smartdevicelink.exception.SdlException;
@@ -58,7 +57,6 @@ import com.smartdevicelink.proxy.rpc.ResetGlobalPropertiesResponse;
 import com.smartdevicelink.proxy.rpc.ScrollableMessageResponse;
 import com.smartdevicelink.proxy.rpc.SendLocationResponse;
 import com.smartdevicelink.proxy.rpc.SetAppIconResponse;
-import com.smartdevicelink.proxy.rpc.SetDisplayLayout;
 import com.smartdevicelink.proxy.rpc.SetDisplayLayoutResponse;
 import com.smartdevicelink.proxy.rpc.SetGlobalPropertiesResponse;
 import com.smartdevicelink.proxy.rpc.SetMediaClockTimerResponse;
@@ -80,7 +78,6 @@ import com.smartdevicelink.proxy.rpc.enums.FileType;
 import com.smartdevicelink.proxy.rpc.enums.HMILevel;
 import com.smartdevicelink.proxy.rpc.enums.LockScreenStatus;
 import com.smartdevicelink.proxy.rpc.enums.SdlDisconnectedReason;
-import com.smartdevicelink.proxy.rpc.enums.TextAlignment;
 import com.smartdevicelink.transport.BaseTransportConfig;
 import com.smartdevicelink.transport.TCPTransportConfig;
 
@@ -90,7 +87,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class SdlService extends Service implements IProxyListenerALM{
 
