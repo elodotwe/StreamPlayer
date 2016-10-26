@@ -34,4 +34,15 @@
         android:layout_below="@+id/startButt"
         android:layout_alignEnd="@+id/startButt"
         android:onClick="onStopButton" />
+
+    <Button
+        android:text="Button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/stopButt"
+        android:layout_alignEnd="@+id/stopButt"
+        android:layout_marginEnd="13dp"
+        android:layout_marginTop="13dp"
+        android:id="@+id/button"
+        android:onClick="onQuery" />
 </RelativeLayout>

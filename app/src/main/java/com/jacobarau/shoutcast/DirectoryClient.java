@@ -1,10 +1,21 @@
 package com.jacobarau.shoutcast;
 
+import android.util.Log;
+
 /**
  * Created by jacob on 10/14/16.
  */
 
 public class DirectoryClient {
+    private static final String TAG = "DirectoryClient";
+    IHTTPClient client;
+
+    final String DEVELOPER_KEY = "***REMOVED***";
+
+    public DirectoryClient(IHTTPClient httpClient) {
+        client = httpClient;
+    }
+
     /**
      * Start an asynchronous query to get stations playing a track matching the given nowPlaying
      * string (e.g. find stations playing Weird Al).
@@ -63,6 +74,22 @@ public class DirectoryClient {
      * @param parent If not null, specifies the parent genre to query
      */
     public void queryGenres(IGenreListQueryListener listener, Genre parent) {
+        String url;
+        int id = 0;
+        if (parent != null) {
+            id = parent.getId();
+        }
+        url = "http://api.shoutcast.com/genre/secondary?parentid=" + id + "&k=" + DEVELOPER_KEY + "&f=xml";
+        client.httpGet(url, new IHTTPClientListener() {
+            @Override
+            public void onError(String message) {
+                Log.e(TAG, "Error callback from HTTP listener. '" + message + "'");
+            }
 
+            @Override
+            public void onResult(String resultBody) {
+                Log.i(TAG, "onResult: " + resultBody);
+            }
+        });
     }
 }

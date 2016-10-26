@@ -37,6 +37,9 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.util.Util;
+import com.jacobarau.shoutcast.DirectoryClient;
+import com.jacobarau.shoutcast.Genre;
+import com.jacobarau.shoutcast.IGenreListQueryListener;
 
 import java.io.IOException;
 import java.util.concurrent.Executors;
@@ -47,6 +50,8 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
     final String TAG = "StreamingService";
     private static final String ACTION_START = "com.jacobarau.streamplayer.action.START";
     private static final String ACTION_STOP = "com.jacobarau.streamplayer.action.STOP";
+
+    private static final String ACTION_GET_GENRES = "com.jacobarau.streamplayer.action.GET_GENRES";
 
     SimpleExoPlayer player = null;
     public static boolean isStreaming = false;
@@ -73,6 +78,12 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
             intent.setAction(StreamingService.ACTION_STOP);
             ctx.startService(intent);
         }
+    }
+
+    public static void queryGenres(Context ctx) {
+        Intent intent = new Intent(ctx, StreamingService.class);
+        intent.setAction(StreamingService.ACTION_GET_GENRES);
+        ctx.startService(intent);
     }
 
     public StreamingService() {
@@ -164,6 +175,23 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
             this.stopSelf();
         }
 
+        if (intent.getAction() == ACTION_GET_GENRES) {
+            Log.i(TAG, "GET_GENRES received");
+            DirectoryClient dc = new DirectoryClient(new HTTPClient());
+            dc.queryGenres(new IGenreListQueryListener() {
+                @Override
+                public void onError() {
+                    Log.e(TAG, "onError");
+                }
+
+                @Override
+                public void onResultReturned(Genre[] genres) {
+                    for (Genre g : genres) {
+                        Log.i(TAG, "Genre returned: " + g.getName() + ", " + g.getId());
+                    }
+                }
+            }, null);
+        }
 
         return START_STICKY;
     }
