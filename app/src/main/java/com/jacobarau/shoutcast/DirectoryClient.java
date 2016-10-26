@@ -2,6 +2,14 @@ package com.jacobarau.shoutcast;
 
 import android.util.Log;
 
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlPullParserFactory;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+
 /**
  * Created by jacob on 10/14/16.
  */
@@ -73,7 +81,7 @@ public class DirectoryClient {
      * @param listener
      * @param parent If not null, specifies the parent genre to query
      */
-    public void queryGenres(IGenreListQueryListener listener, Genre parent) {
+    public void queryGenres(final IGenreListQueryListener listener, Genre parent) {
         String url;
         int id = 0;
         if (parent != null) {
@@ -89,6 +97,49 @@ public class DirectoryClient {
             @Override
             public void onResult(String resultBody) {
                 Log.i(TAG, "onResult: " + resultBody);
+                XmlPullParserFactory factory = null;
+                try {
+                    factory = XmlPullParserFactory.newInstance();
+                } catch (XmlPullParserException e) {
+                    e.printStackTrace();
+                }
+                factory.setNamespaceAware(true);
+                ArrayList<Genre> genres = new ArrayList<Genre>();
+                try {
+                    XmlPullParser xpp = factory.newPullParser();
+                    xpp.setInput( new StringReader( resultBody ) );
+                    int eventType = xpp.getEventType();
+                    while (eventType != XmlPullParser.END_DOCUMENT) {
+                        if(eventType == XmlPullParser.START_DOCUMENT) {
+                            System.out.println("Start document");
+                        } else if(eventType == XmlPullParser.START_TAG) {
+                            System.out.println("Start tag "+xpp.getName());
+                            if (xpp.getName().equals("genre")) {
+                                Log.i(TAG, "name = " + (String)xpp.getAttributeValue(null,"name"));
+                                Log.i(TAG, "id = " + (String)xpp.getAttributeValue(null,"id"));
+                                Log.i(TAG, "parentid = " + (String)xpp.getAttributeValue(null,"parentid"));
+                                Log.i(TAG, "haschildren = " + xpp.getAttributeValue(null,"haschildren"));
+                                Genre g = new Genre((String)xpp.getAttributeValue(null,"name"), Integer.decode((String)xpp.getAttributeValue(null,"id")), Integer.decode((String)xpp.getAttributeValue(null,"parentid")), xpp.getAttributeValue(null,"haschildren").equals("true"));
+                                genres.add(g);
+                            }
+                        } else if(eventType == XmlPullParser.END_TAG) {
+                            System.out.println("End tag "+xpp.getName());
+                        } else if(eventType == XmlPullParser.TEXT) {
+                            System.out.println("Text "+xpp.getText());
+                        }
+                        eventType = xpp.next();
+                    }
+                    System.out.println("End document");
+
+                    Genre[] genresArray = new Genre[genres.size()];
+                    genresArray = genres.toArray(genresArray);
+                    listener.onResultReturned(genresArray);
+                } catch (XmlPullParserException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
             }
         });
     }
