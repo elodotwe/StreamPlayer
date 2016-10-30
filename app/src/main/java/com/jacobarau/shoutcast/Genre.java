@@ -1,19 +1,20 @@
 package com.jacobarau.shoutcast;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by jacob on 10/16/16.
  */
 public class Genre {
     private String name;
     private int id;
-    private int parentID;
-    private boolean hasChildren;
+    private List<Genre> children;
 
-    public Genre(String name, int id, int parentID, boolean hasChildren) {
+    public Genre(String name, int id, Genre parent) {
         this.name = name;
         this.id = id;
-        this.parentID = parentID;
-        this.hasChildren = hasChildren;
+        this.children = new ArrayList<>();
     }
 
     public int getId() {
@@ -24,15 +25,15 @@ public class Genre {
         return name;
     }
 
-    /**
-     * Parent ID of 0 means there is no parent--this genre is a top-level genre.
-     * @return
-     */
-    public int getParentID() {
-        return parentID;
+    public List<Genre> getChildren() {
+        return children;
     }
 
-    public boolean isHasChildren() {
-        return hasChildren;
+    public void addChildren(List<Genre> children) {
+        this.children.addAll(children);
+    }
+
+    public void addChild(Genre child) {
+        this.children.add(child);
     }
 }

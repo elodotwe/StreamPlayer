@@ -1,0 +1,2435 @@
+http://api.shoutcast.com/station/advancedsearch?genre_id=1&limit=3&f=json&k=***REMOVED***
+
+{
+  "response": {
+    "statusCode": 200,
+    "data": {
+      "stationlist": {
+        "station": [
+          {
+            "id": 832669,
+            "genre": "Alternative",
+            "mt": "audio\/mpeg",
+            "name": "idobi Radio: New. Music. Unfiltered. idobi.com",
+            "lc": 16798,
+            "ml": 442100,
+            "br": 128,
+            "ct": "New Found Glory - My Friends Over You"
+          },
+          {
+            "id": 44691,
+            "genre": "Alternative",
+            "mt": "audio\/mpeg",
+            "name": "idobi Anthm",
+            "lc": 1933,
+            "ml": 80000,
+            "br": 128,
+            "ct": "Jagwar Ma - Man I Need"
+          },
+          {
+            "id": 139479,
+            "genre": "Alternative",
+            "mt": "audio\/mpeg",
+            "name": "FM4",
+            "lc": 456,
+            "ml": 12500,
+            "br": 160,
+            "ct": "red: Heap (Discus Throwers) Mix live @ Elevate | FM4 La Boum"
+          }
+        ],
+        "tunein": {
+          "base-m3u": "\/sbin\/tunein-station.m3u",
+          "base": "\/sbin\/tunein-station.pls",
+          "base-xspf": "\/sbin\/tunein-station.xspf"
+        }
+      }
+    },
+    "statusText": "Ok"
+  }
+}
+
+
+http://api.shoutcast.com/genre/secondary?parentid=0&k=***REMOVED***&f=json
+
+{
+  "response": {
+    "statusCode": 200,
+    "data": {
+      "genrelist": {
+        "genre": [
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 2,
+                  "haschildren": false,
+                  "count": 64,
+                  "name": "Adult Alternative",
+                  "parentid": 1
+                },
+                {
+                  "id": 3,
+                  "haschildren": false,
+                  "count": 64,
+                  "name": "Britpop",
+                  "parentid": 1
+                },
+                {
+                  "id": 4,
+                  "haschildren": false,
+                  "count": 12,
+                  "name": "Classic Alternative",
+                  "parentid": 1
+                },
+                {
+                  "id": 5,
+                  "haschildren": false,
+                  "count": 152,
+                  "name": "College",
+                  "parentid": 1
+                },
+                {
+                  "id": 6,
+                  "haschildren": false,
+                  "count": 4,
+                  "name": "Dancepunk",
+                  "parentid": 1
+                },
+                {
+                  "id": 7,
+                  "haschildren": false,
+                  "count": 10,
+                  "name": "Dream Pop",
+                  "parentid": 1
+                },
+                {
+                  "id": 8,
+                  "haschildren": false,
+                  "count": 9,
+                  "name": "Emo",
+                  "parentid": 1
+                },
+                {
+                  "id": 9,
+                  "haschildren": false,
+                  "count": 35,
+                  "name": "Goth",
+                  "parentid": 1
+                },
+                {
+                  "id": 10,
+                  "haschildren": false,
+                  "count": 28,
+                  "name": "Grunge",
+                  "parentid": 1
+                },
+                {
+                  "id": 11,
+                  "haschildren": false,
+                  "count": 96,
+                  "name": "Hardcore",
+                  "parentid": 1
+                },
+                {
+                  "id": 12,
+                  "haschildren": false,
+                  "count": 166,
+                  "name": "Indie Pop",
+                  "parentid": 1
+                },
+                {
+                  "id": 13,
+                  "haschildren": false,
+                  "count": 40,
+                  "name": "Indie Rock",
+                  "parentid": 1
+                },
+                {
+                  "id": 14,
+                  "haschildren": false,
+                  "count": 50,
+                  "name": "Industrial",
+                  "parentid": 1
+                },
+                {
+                  "id": 15,
+                  "haschildren": false,
+                  "count": 2,
+                  "name": "LoFi",
+                  "parentid": 1
+                },
+                {
+                  "id": 16,
+                  "haschildren": false,
+                  "count": 11,
+                  "name": "Modern Rock",
+                  "parentid": 1
+                },
+                {
+                  "id": 17,
+                  "haschildren": false,
+                  "count": 35,
+                  "name": "New Wave",
+                  "parentid": 1
+                },
+                {
+                  "id": 18,
+                  "haschildren": false,
+                  "count": 2,
+                  "name": "Noise Pop",
+                  "parentid": 1
+                },
+                {
+                  "id": 19,
+                  "haschildren": false,
+                  "count": 6,
+                  "name": "Post Punk",
+                  "parentid": 1
+                },
+                {
+                  "id": 20,
+                  "haschildren": false,
+                  "count": 14,
+                  "name": "Power Pop",
+                  "parentid": 1
+                },
+                {
+                  "id": 21,
+                  "haschildren": false,
+                  "count": 67,
+                  "name": "Punk",
+                  "parentid": 1
+                },
+                {
+                  "id": 22,
+                  "haschildren": false,
+                  "count": 34,
+                  "name": "Ska",
+                  "parentid": 1
+                },
+                {
+                  "id": 23,
+                  "haschildren": false,
+                  "count": 2,
+                  "name": "Xtreme",
+                  "parentid": 1
+                }
+              ]
+            },
+            "id": 1,
+            "haschildren": true,
+            "count": 574,
+            "name": "Alternative",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 25,
+                  "haschildren": false,
+                  "count": 533,
+                  "name": "Acoustic Blues",
+                  "parentid": 24
+                },
+                {
+                  "id": 31,
+                  "haschildren": false,
+                  "count": 7,
+                  "name": "Cajun and Zydeco",
+                  "parentid": 24
+                },
+                {
+                  "id": 26,
+                  "haschildren": false,
+                  "count": 7,
+                  "name": "Chicago Blues",
+                  "parentid": 24
+                },
+                {
+                  "id": 27,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "Contemporary Blues",
+                  "parentid": 24
+                },
+                {
+                  "id": 28,
+                  "haschildren": false,
+                  "count": 164,
+                  "name": "Country Blues",
+                  "parentid": 24
+                },
+                {
+                  "id": 29,
+                  "haschildren": false,
+                  "count": 53,
+                  "name": "Delta Blues",
+                  "parentid": 24
+                },
+                {
+                  "id": 30,
+                  "haschildren": false,
+                  "count": 170,
+                  "name": "Electric Blues",
+                  "parentid": 24
+                }
+              ]
+            },
+            "id": 24,
+            "haschildren": true,
+            "count": 1000,
+            "name": "Blues",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 33,
+                  "haschildren": false,
+                  "count": 64,
+                  "name": "Baroque",
+                  "parentid": 32
+                },
+                {
+                  "id": 34,
+                  "haschildren": false,
+                  "count": 16,
+                  "name": "Chamber",
+                  "parentid": 32
+                },
+                {
+                  "id": 35,
+                  "haschildren": false,
+                  "count": 16,
+                  "name": "Choral",
+                  "parentid": 32
+                },
+                {
+                  "id": 36,
+                  "haschildren": false,
+                  "count": 10,
+                  "name": "Classical Period",
+                  "parentid": 32
+                },
+                {
+                  "id": 37,
+                  "haschildren": false,
+                  "count": 4,
+                  "name": "Early Classical",
+                  "parentid": 32
+                },
+                {
+                  "id": 38,
+                  "haschildren": false,
+                  "count": 1,
+                  "name": "Impressionist",
+                  "parentid": 32
+                },
+                {
+                  "id": 39,
+                  "haschildren": false,
+                  "count": 18,
+                  "name": "Modern",
+                  "parentid": 32
+                },
+                {
+                  "id": 40,
+                  "haschildren": false,
+                  "count": 82,
+                  "name": "Opera",
+                  "parentid": 32
+                },
+                {
+                  "id": 41,
+                  "haschildren": false,
+                  "count": 14,
+                  "name": "Piano",
+                  "parentid": 32
+                },
+                {
+                  "id": 42,
+                  "haschildren": false,
+                  "count": 71,
+                  "name": "Romantic",
+                  "parentid": 32
+                },
+                {
+                  "id": 43,
+                  "haschildren": false,
+                  "count": 23,
+                  "name": "Symphony",
+                  "parentid": 32
+                }
+              ]
+            },
+            "id": 32,
+            "haschildren": true,
+            "count": 570,
+            "name": "Classical",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 45,
+                  "haschildren": false,
+                  "count": 8,
+                  "name": "Alt Country",
+                  "parentid": 44
+                },
+                {
+                  "id": 46,
+                  "haschildren": false,
+                  "count": 34,
+                  "name": "Americana",
+                  "parentid": 44
+                },
+                {
+                  "id": 47,
+                  "haschildren": false,
+                  "count": 49,
+                  "name": "Bluegrass",
+                  "parentid": 44
+                },
+                {
+                  "id": 48,
+                  "haschildren": false,
+                  "count": 41,
+                  "name": "Classic Country",
+                  "parentid": 44
+                },
+                {
+                  "id": 49,
+                  "haschildren": false,
+                  "name": "Contemporary Bluegrass",
+                  "parentid": 44
+                },
+                {
+                  "id": 50,
+                  "haschildren": false,
+                  "count": 12,
+                  "name": "Contemporary Country",
+                  "parentid": 44
+                },
+                {
+                  "id": 51,
+                  "haschildren": false,
+                  "count": 8,
+                  "name": "Honky Tonk",
+                  "parentid": 44
+                },
+                {
+                  "id": 52,
+                  "haschildren": false,
+                  "count": 41,
+                  "name": "Hot Country Hits",
+                  "parentid": 44
+                },
+                {
+                  "id": 53,
+                  "haschildren": false,
+                  "count": 9,
+                  "name": "Western",
+                  "parentid": 44
+                }
+              ]
+            },
+            "id": 44,
+            "haschildren": true,
+            "count": 608,
+            "name": "Country",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 303,
+                  "haschildren": false,
+                  "count": 15,
+                  "name": "00s",
+                  "parentid": 212
+                },
+                {
+                  "id": 213,
+                  "haschildren": false,
+                  "count": 2,
+                  "name": "30s",
+                  "parentid": 212
+                },
+                {
+                  "id": 214,
+                  "haschildren": false,
+                  "count": 11,
+                  "name": "40s",
+                  "parentid": 212
+                },
+                {
+                  "id": 215,
+                  "haschildren": false,
+                  "count": 27,
+                  "name": "50s",
+                  "parentid": 212
+                },
+                {
+                  "id": 216,
+                  "haschildren": false,
+                  "count": 126,
+                  "name": "60s",
+                  "parentid": 212
+                },
+                {
+                  "id": 217,
+                  "haschildren": false,
+                  "count": 143,
+                  "name": "70s",
+                  "parentid": 212
+                },
+                {
+                  "id": 218,
+                  "haschildren": false,
+                  "count": 516,
+                  "name": "80s",
+                  "parentid": 212
+                },
+                {
+                  "id": 219,
+                  "haschildren": false,
+                  "count": 197,
+                  "name": "90s",
+                  "parentid": 212
+                }
+              ]
+            },
+            "id": 212,
+            "haschildren": true,
+            "count": 236,
+            "name": "Decades",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 55,
+                  "haschildren": false,
+                  "count": 8,
+                  "name": "Exotica",
+                  "parentid": 54
+                },
+                {
+                  "id": 56,
+                  "haschildren": false,
+                  "count": 66,
+                  "name": "Light Rock",
+                  "parentid": 54
+                },
+                {
+                  "id": 57,
+                  "haschildren": false,
+                  "count": 184,
+                  "name": "Lounge",
+                  "parentid": 54
+                },
+                {
+                  "id": 58,
+                  "haschildren": false,
+                  "name": "Orchestral Pop",
+                  "parentid": 54
+                },
+                {
+                  "id": 59,
+                  "haschildren": false,
+                  "count": 30,
+                  "name": "Polka",
+                  "parentid": 54
+                },
+                {
+                  "id": 60,
+                  "haschildren": false,
+                  "count": 8,
+                  "name": "Space Age Pop",
+                  "parentid": 54
+                }
+              ]
+            },
+            "id": 54,
+            "haschildren": true,
+            "count": 409,
+            "name": "Easy Listening",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 62,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "Acid House",
+                  "parentid": 61
+                },
+                {
+                  "id": 63,
+                  "haschildren": false,
+                  "count": 305,
+                  "name": "Ambient",
+                  "parentid": 61
+                },
+                {
+                  "id": 64,
+                  "haschildren": false,
+                  "count": 9,
+                  "name": "Big Beat",
+                  "parentid": 61
+                },
+                {
+                  "id": 65,
+                  "haschildren": false,
+                  "count": 54,
+                  "name": "Breakbeat",
+                  "parentid": 61
+                },
+                {
+                  "id": 66,
+                  "haschildren": false,
+                  "count": 1455,
+                  "name": "Dance",
+                  "parentid": 61
+                },
+                {
+                  "id": 67,
+                  "haschildren": false,
+                  "count": 433,
+                  "name": "Demo",
+                  "parentid": 61
+                },
+                {
+                  "id": 68,
+                  "haschildren": false,
+                  "count": 171,
+                  "name": "Disco",
+                  "parentid": 61
+                },
+                {
+                  "id": 69,
+                  "haschildren": false,
+                  "count": 45,
+                  "name": "Downtempo",
+                  "parentid": 61
+                },
+                {
+                  "id": 70,
+                  "haschildren": false,
+                  "count": 90,
+                  "name": "Drum and Bass",
+                  "parentid": 61
+                },
+                {
+                  "id": 312,
+                  "haschildren": false,
+                  "count": 37,
+                  "name": "Dubstep",
+                  "parentid": 61
+                },
+                {
+                  "id": 71,
+                  "haschildren": false,
+                  "count": 467,
+                  "name": "Electro",
+                  "parentid": 61
+                },
+                {
+                  "id": 72,
+                  "haschildren": false,
+                  "count": 19,
+                  "name": "Garage",
+                  "parentid": 61
+                },
+                {
+                  "id": 73,
+                  "haschildren": false,
+                  "count": 26,
+                  "name": "Hard House",
+                  "parentid": 61
+                },
+                {
+                  "id": 74,
+                  "haschildren": false,
+                  "count": 808,
+                  "name": "House",
+                  "parentid": 61
+                },
+                {
+                  "id": 75,
+                  "haschildren": false,
+                  "count": 2,
+                  "name": "IDM",
+                  "parentid": 61
+                },
+                {
+                  "id": 76,
+                  "haschildren": false,
+                  "count": 30,
+                  "name": "Jungle",
+                  "parentid": 61
+                },
+                {
+                  "id": 77,
+                  "haschildren": false,
+                  "count": 32,
+                  "name": "Progressive",
+                  "parentid": 61
+                },
+                {
+                  "id": 78,
+                  "haschildren": false,
+                  "count": 264,
+                  "name": "Techno",
+                  "parentid": 61
+                },
+                {
+                  "id": 79,
+                  "haschildren": false,
+                  "count": 283,
+                  "name": "Trance",
+                  "parentid": 61
+                },
+                {
+                  "id": 80,
+                  "haschildren": false,
+                  "count": 7,
+                  "name": "Tribal",
+                  "parentid": 61
+                },
+                {
+                  "id": 81,
+                  "haschildren": false,
+                  "count": 40,
+                  "name": "Trip Hop",
+                  "parentid": 61
+                }
+              ]
+            },
+            "id": 61,
+            "haschildren": true,
+            "count": 789,
+            "name": "Electronic",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 83,
+                  "haschildren": false,
+                  "count": 8,
+                  "name": "Alternative Folk",
+                  "parentid": 82
+                },
+                {
+                  "id": 84,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "Contemporary Folk",
+                  "parentid": 82
+                },
+                {
+                  "id": 85,
+                  "haschildren": false,
+                  "count": 8,
+                  "name": "Folk Rock",
+                  "parentid": 82
+                },
+                {
+                  "id": 86,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "New Acoustic",
+                  "parentid": 82
+                },
+                {
+                  "id": 304,
+                  "haschildren": false,
+                  "count": 11,
+                  "name": "Old Time",
+                  "parentid": 82
+                },
+                {
+                  "id": 87,
+                  "haschildren": false,
+                  "count": 32,
+                  "name": "Traditional Folk",
+                  "parentid": 82
+                },
+                {
+                  "id": 88,
+                  "haschildren": false,
+                  "count": 22,
+                  "name": "World Folk",
+                  "parentid": 82
+                }
+              ]
+            },
+            "id": 82,
+            "haschildren": true,
+            "count": 449,
+            "name": "Folk",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 123,
+                  "haschildren": false,
+                  "count": 1495,
+                  "name": "Christian",
+                  "parentid": 122
+                },
+                {
+                  "id": 124,
+                  "haschildren": false,
+                  "count": 4,
+                  "name": "Christian Metal",
+                  "parentid": 122
+                },
+                {
+                  "id": 125,
+                  "haschildren": false,
+                  "count": 11,
+                  "name": "Christian Rap",
+                  "parentid": 122
+                },
+                {
+                  "id": 126,
+                  "haschildren": false,
+                  "count": 74,
+                  "name": "Christian Rock",
+                  "parentid": 122
+                },
+                {
+                  "id": 127,
+                  "haschildren": false,
+                  "count": 4,
+                  "name": "Classic Christian",
+                  "parentid": 122
+                },
+                {
+                  "id": 128,
+                  "haschildren": false,
+                  "count": 14,
+                  "name": "Contemporary Gospel",
+                  "parentid": 122
+                },
+                {
+                  "id": 129,
+                  "haschildren": false,
+                  "count": 1974,
+                  "name": "Gospel",
+                  "parentid": 122
+                },
+                {
+                  "id": 130,
+                  "haschildren": false,
+                  "count": 344,
+                  "name": "Praise and Worship",
+                  "parentid": 122
+                },
+                {
+                  "id": 131,
+                  "haschildren": false,
+                  "count": 31,
+                  "name": "Sermons and Services",
+                  "parentid": 122
+                },
+                {
+                  "id": 132,
+                  "haschildren": false,
+                  "count": 29,
+                  "name": "Southern Gospel",
+                  "parentid": 122
+                },
+                {
+                  "id": 133,
+                  "haschildren": false,
+                  "count": 2,
+                  "name": "Traditional Gospel",
+                  "parentid": 122
+                }
+              ]
+            },
+            "id": 122,
+            "haschildren": true,
+            "count": 315,
+            "name": "Inspirational",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 135,
+                  "haschildren": false,
+                  "count": 154,
+                  "name": "African",
+                  "parentid": 134
+                },
+                {
+                  "id": 309,
+                  "haschildren": false,
+                  "count": 10,
+                  "name": "Afrikaans",
+                  "parentid": 134
+                },
+                {
+                  "id": 136,
+                  "haschildren": false,
+                  "count": 106,
+                  "name": "Arabic",
+                  "parentid": 134
+                },
+                {
+                  "id": 137,
+                  "haschildren": false,
+                  "count": 120,
+                  "name": "Asian",
+                  "parentid": 134
+                },
+                {
+                  "id": 138,
+                  "haschildren": false,
+                  "count": 19,
+                  "name": "Bollywood",
+                  "parentid": 134
+                },
+                {
+                  "id": 139,
+                  "haschildren": false,
+                  "count": 83,
+                  "name": "Brazilian",
+                  "parentid": 134
+                },
+                {
+                  "id": 140,
+                  "haschildren": false,
+                  "count": 36,
+                  "name": "Caribbean",
+                  "parentid": 134
+                },
+                {
+                  "id": 141,
+                  "haschildren": false,
+                  "count": 32,
+                  "name": "Celtic",
+                  "parentid": 134
+                },
+                {
+                  "id": 142,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "Chinese",
+                  "parentid": 134
+                },
+                {
+                  "id": 316,
+                  "haschildren": false,
+                  "count": 12,
+                  "name": "Creole",
+                  "parentid": 134
+                },
+                {
+                  "id": 143,
+                  "haschildren": false,
+                  "count": 1060,
+                  "name": "European",
+                  "parentid": 134
+                },
+                {
+                  "id": 144,
+                  "haschildren": false,
+                  "count": 7,
+                  "name": "Filipino",
+                  "parentid": 134
+                },
+                {
+                  "id": 145,
+                  "haschildren": false,
+                  "count": 6,
+                  "name": "French",
+                  "parentid": 134
+                },
+                {
+                  "id": 302,
+                  "haschildren": false,
+                  "count": 40,
+                  "name": "German",
+                  "parentid": 134
+                },
+                {
+                  "id": 146,
+                  "haschildren": false,
+                  "count": 198,
+                  "name": "Greek",
+                  "parentid": 134
+                },
+                {
+                  "id": 147,
+                  "haschildren": false,
+                  "count": 12,
+                  "name": "Hawaiian and Pacific",
+                  "parentid": 134
+                },
+                {
+                  "id": 151,
+                  "haschildren": false,
+                  "count": 19,
+                  "name": "Hebrew",
+                  "parentid": 134
+                },
+                {
+                  "id": 148,
+                  "haschildren": false,
+                  "count": 36,
+                  "name": "Hindi",
+                  "parentid": 134
+                },
+                {
+                  "id": 149,
+                  "haschildren": false,
+                  "count": 41,
+                  "name": "Indian",
+                  "parentid": 134
+                },
+                {
+                  "id": 307,
+                  "haschildren": false,
+                  "count": 360,
+                  "name": "Islamic",
+                  "parentid": 134
+                },
+                {
+                  "id": 150,
+                  "haschildren": false,
+                  "count": 70,
+                  "name": "Japanese",
+                  "parentid": 134
+                },
+                {
+                  "id": 152,
+                  "haschildren": false,
+                  "name": "Klezmer",
+                  "parentid": 134
+                },
+                {
+                  "id": 153,
+                  "haschildren": false,
+                  "count": 5,
+                  "name": "Korean",
+                  "parentid": 134
+                },
+                {
+                  "id": 154,
+                  "haschildren": false,
+                  "count": 8,
+                  "name": "Mediterranean",
+                  "parentid": 134
+                },
+                {
+                  "id": 155,
+                  "haschildren": false,
+                  "count": 69,
+                  "name": "Middle Eastern",
+                  "parentid": 134
+                },
+                {
+                  "id": 156,
+                  "haschildren": false,
+                  "count": 5,
+                  "name": "North American",
+                  "parentid": 134
+                },
+                {
+                  "id": 157,
+                  "haschildren": false,
+                  "count": 14,
+                  "name": "Russian",
+                  "parentid": 134
+                },
+                {
+                  "id": 158,
+                  "haschildren": false,
+                  "count": 24,
+                  "name": "Soca",
+                  "parentid": 134
+                },
+                {
+                  "id": 159,
+                  "haschildren": false,
+                  "count": 26,
+                  "name": "South American",
+                  "parentid": 134
+                },
+                {
+                  "id": 160,
+                  "haschildren": false,
+                  "count": 63,
+                  "name": "Tamil",
+                  "parentid": 134
+                },
+                {
+                  "id": 305,
+                  "haschildren": false,
+                  "count": 110,
+                  "name": "Turkish",
+                  "parentid": 134
+                },
+                {
+                  "id": 161,
+                  "haschildren": false,
+                  "count": 77,
+                  "name": "Worldbeat",
+                  "parentid": 134
+                },
+                {
+                  "id": 162,
+                  "haschildren": false,
+                  "count": 71,
+                  "name": "Zouk",
+                  "parentid": 134
+                }
+              ]
+            },
+            "id": 134,
+            "haschildren": true,
+            "count": 827,
+            "name": "International",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 164,
+                  "haschildren": false,
+                  "count": 24,
+                  "name": "Acid Jazz",
+                  "parentid": 163
+                },
+                {
+                  "id": 165,
+                  "haschildren": false,
+                  "count": 6,
+                  "name": "Avant Garde",
+                  "parentid": 163
+                },
+                {
+                  "id": 166,
+                  "haschildren": false,
+                  "count": 7,
+                  "name": "Big Band",
+                  "parentid": 163
+                },
+                {
+                  "id": 167,
+                  "haschildren": false,
+                  "count": 16,
+                  "name": "Bop",
+                  "parentid": 163
+                },
+                {
+                  "id": 168,
+                  "haschildren": false,
+                  "count": 52,
+                  "name": "Classic Jazz",
+                  "parentid": 163
+                },
+                {
+                  "id": 169,
+                  "haschildren": false,
+                  "count": 9,
+                  "name": "Cool Jazz",
+                  "parentid": 163
+                },
+                {
+                  "id": 170,
+                  "haschildren": false,
+                  "count": 13,
+                  "name": "Fusion",
+                  "parentid": 163
+                },
+                {
+                  "id": 171,
+                  "haschildren": false,
+                  "count": 1,
+                  "name": "Hard Bop",
+                  "parentid": 163
+                },
+                {
+                  "id": 172,
+                  "haschildren": false,
+                  "count": 10,
+                  "name": "Latin Jazz",
+                  "parentid": 163
+                },
+                {
+                  "id": 173,
+                  "haschildren": false,
+                  "count": 149,
+                  "name": "Smooth Jazz",
+                  "parentid": 163
+                },
+                {
+                  "id": 174,
+                  "haschildren": false,
+                  "count": 37,
+                  "name": "Swing",
+                  "parentid": 163
+                },
+                {
+                  "id": 175,
+                  "haschildren": false,
+                  "count": 29,
+                  "name": "Vocal Jazz",
+                  "parentid": 163
+                },
+                {
+                  "id": 176,
+                  "haschildren": false,
+                  "count": 1,
+                  "name": "World Fusion",
+                  "parentid": 163
+                }
+              ]
+            },
+            "id": 163,
+            "haschildren": true,
+            "count": 403,
+            "name": "Jazz",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 178,
+                  "haschildren": false,
+                  "count": 22,
+                  "name": "Bachata",
+                  "parentid": 177
+                },
+                {
+                  "id": 179,
+                  "haschildren": false,
+                  "count": 23,
+                  "name": "Banda",
+                  "parentid": 177
+                },
+                {
+                  "id": 180,
+                  "haschildren": false,
+                  "count": 29,
+                  "name": "Bossa Nova",
+                  "parentid": 177
+                },
+                {
+                  "id": 181,
+                  "haschildren": false,
+                  "count": 83,
+                  "name": "Cumbia",
+                  "parentid": 177
+                },
+                {
+                  "id": 314,
+                  "haschildren": false,
+                  "count": 27,
+                  "name": "Flamenco",
+                  "parentid": 177
+                },
+                {
+                  "id": 182,
+                  "haschildren": false,
+                  "count": 46,
+                  "name": "Latin Dance",
+                  "parentid": 177
+                },
+                {
+                  "id": 183,
+                  "haschildren": false,
+                  "count": 169,
+                  "name": "Latin Pop",
+                  "parentid": 177
+                },
+                {
+                  "id": 184,
+                  "haschildren": false,
+                  "count": 6,
+                  "name": "Latin Rap and Hip Hop",
+                  "parentid": 177
+                },
+                {
+                  "id": 185,
+                  "haschildren": false,
+                  "count": 40,
+                  "name": "Latin Rock",
+                  "parentid": 177
+                },
+                {
+                  "id": 186,
+                  "haschildren": false,
+                  "count": 25,
+                  "name": "Mariachi",
+                  "parentid": 177
+                },
+                {
+                  "id": 187,
+                  "haschildren": false,
+                  "count": 56,
+                  "name": "Merengue",
+                  "parentid": 177
+                },
+                {
+                  "id": 188,
+                  "haschildren": false,
+                  "count": 8,
+                  "name": "Ranchera",
+                  "parentid": 177
+                },
+                {
+                  "id": 189,
+                  "haschildren": false,
+                  "count": 95,
+                  "name": "Reggaeton",
+                  "parentid": 177
+                },
+                {
+                  "id": 190,
+                  "haschildren": false,
+                  "count": 110,
+                  "name": "Regional Mexican",
+                  "parentid": 177
+                },
+                {
+                  "id": 191,
+                  "haschildren": false,
+                  "count": 199,
+                  "name": "Salsa",
+                  "parentid": 177
+                },
+                {
+                  "id": 315,
+                  "haschildren": false,
+                  "count": 31,
+                  "name": "Samba",
+                  "parentid": 177
+                },
+                {
+                  "id": 192,
+                  "haschildren": false,
+                  "count": 28,
+                  "name": "Tango",
+                  "parentid": 177
+                },
+                {
+                  "id": 193,
+                  "haschildren": false,
+                  "count": 38,
+                  "name": "Tejano",
+                  "parentid": 177
+                },
+                {
+                  "id": 194,
+                  "haschildren": false,
+                  "count": 82,
+                  "name": "Tropicalia",
+                  "parentid": 177
+                }
+              ]
+            },
+            "id": 177,
+            "haschildren": true,
+            "count": 548,
+            "name": "Latin",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 196,
+                  "haschildren": false,
+                  "count": 53,
+                  "name": "Black Metal",
+                  "parentid": 195
+                },
+                {
+                  "id": 197,
+                  "haschildren": false,
+                  "count": 2,
+                  "name": "Classic Metal",
+                  "parentid": 195
+                },
+                {
+                  "id": 311,
+                  "haschildren": false,
+                  "count": 20,
+                  "name": "Death Metal",
+                  "parentid": 195
+                },
+                {
+                  "id": 198,
+                  "haschildren": false,
+                  "count": 4,
+                  "name": "Extreme Metal",
+                  "parentid": 195
+                },
+                {
+                  "id": 199,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "Grindcore",
+                  "parentid": 195
+                },
+                {
+                  "id": 200,
+                  "haschildren": false,
+                  "name": "Hair Metal",
+                  "parentid": 195
+                },
+                {
+                  "id": 201,
+                  "haschildren": false,
+                  "count": 115,
+                  "name": "Heavy Metal",
+                  "parentid": 195
+                },
+                {
+                  "id": 202,
+                  "haschildren": false,
+                  "count": 12,
+                  "name": "Metalcore",
+                  "parentid": 195
+                },
+                {
+                  "id": 203,
+                  "haschildren": false,
+                  "count": 2,
+                  "name": "Power Metal",
+                  "parentid": 195
+                },
+                {
+                  "id": 204,
+                  "haschildren": false,
+                  "count": 9,
+                  "name": "Progressive Metal",
+                  "parentid": 195
+                },
+                {
+                  "id": 205,
+                  "haschildren": false,
+                  "name": "Rap Metal",
+                  "parentid": 195
+                },
+                {
+                  "id": 313,
+                  "haschildren": false,
+                  "count": 13,
+                  "name": "Thrash Metal",
+                  "parentid": 195
+                }
+              ]
+            },
+            "id": 195,
+            "haschildren": true,
+            "count": 238,
+            "name": "Metal",
+            "parentid": 0
+          },
+          {
+            "id": 295,
+            "haschildren": false,
+            "count": 6332,
+            "name": "Misc",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 207,
+                  "haschildren": false,
+                  "count": 5,
+                  "name": "Environmental",
+                  "parentid": 206
+                },
+                {
+                  "id": 208,
+                  "haschildren": false,
+                  "count": 8,
+                  "name": "Ethnic Fusion",
+                  "parentid": 206
+                },
+                {
+                  "id": 209,
+                  "haschildren": false,
+                  "count": 6,
+                  "name": "Healing",
+                  "parentid": 206
+                },
+                {
+                  "id": 210,
+                  "haschildren": false,
+                  "count": 22,
+                  "name": "Meditation",
+                  "parentid": 206
+                },
+                {
+                  "id": 211,
+                  "haschildren": false,
+                  "count": 399,
+                  "name": "Spiritual",
+                  "parentid": 206
+                }
+              ]
+            },
+            "id": 206,
+            "haschildren": true,
+            "count": 154,
+            "name": "New Age",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 221,
+                  "haschildren": false,
+                  "count": 174,
+                  "name": "Adult Contemporary",
+                  "parentid": 220
+                },
+                {
+                  "id": 222,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "Barbershop",
+                  "parentid": 220
+                },
+                {
+                  "id": 223,
+                  "haschildren": false,
+                  "name": "Bubblegum Pop",
+                  "parentid": 220
+                },
+                {
+                  "id": 224,
+                  "haschildren": false,
+                  "count": 107,
+                  "name": "Dance Pop",
+                  "parentid": 220
+                },
+                {
+                  "id": 225,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "Idols",
+                  "parentid": 220
+                },
+                {
+                  "id": 227,
+                  "haschildren": false,
+                  "count": 38,
+                  "name": "JPOP",
+                  "parentid": 220
+                },
+                {
+                  "id": 308,
+                  "haschildren": false,
+                  "count": 36,
+                  "name": "KPOP",
+                  "parentid": 220
+                },
+                {
+                  "id": 226,
+                  "haschildren": false,
+                  "count": 742,
+                  "name": "Oldies",
+                  "parentid": 220
+                },
+                {
+                  "id": 228,
+                  "haschildren": false,
+                  "count": 260,
+                  "name": "Soft Rock",
+                  "parentid": 220
+                },
+                {
+                  "id": 229,
+                  "haschildren": false,
+                  "count": 13,
+                  "name": "Teen Pop",
+                  "parentid": 220
+                },
+                {
+                  "id": 230,
+                  "haschildren": false,
+                  "count": 1369,
+                  "name": "Top 40",
+                  "parentid": 220
+                },
+                {
+                  "id": 231,
+                  "haschildren": false,
+                  "count": 104,
+                  "name": "World Pop",
+                  "parentid": 220
+                }
+              ]
+            },
+            "id": 220,
+            "haschildren": true,
+            "count": 12431,
+            "name": "Pop",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 300,
+                  "haschildren": false,
+                  "count": 152,
+                  "name": "College",
+                  "parentid": 297
+                },
+                {
+                  "id": 298,
+                  "haschildren": false,
+                  "count": 519,
+                  "name": "News",
+                  "parentid": 297
+                },
+                {
+                  "id": 301,
+                  "haschildren": false,
+                  "count": 232,
+                  "name": "Sports",
+                  "parentid": 297
+                },
+                {
+                  "id": 299,
+                  "haschildren": false,
+                  "count": 1018,
+                  "name": "Talk",
+                  "parentid": 297
+                },
+                {
+                  "id": 317,
+                  "haschildren": false,
+                  "count": 8,
+                  "name": "Weather",
+                  "parentid": 297
+                }
+              ]
+            },
+            "id": 297,
+            "haschildren": true,
+            "count": 1375,
+            "name": "Public Radio",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 233,
+                  "haschildren": false,
+                  "count": 58,
+                  "name": "Classic R&amp;B",
+                  "parentid": 232
+                },
+                {
+                  "id": 234,
+                  "haschildren": false,
+                  "count": 12,
+                  "name": "Contemporary R&amp;B",
+                  "parentid": 232
+                },
+                {
+                  "id": 235,
+                  "haschildren": false,
+                  "name": "Doo Wop",
+                  "parentid": 232
+                },
+                {
+                  "id": 236,
+                  "haschildren": false,
+                  "count": 204,
+                  "name": "Funk",
+                  "parentid": 232
+                },
+                {
+                  "id": 237,
+                  "haschildren": false,
+                  "count": 27,
+                  "name": "Motown",
+                  "parentid": 232
+                },
+                {
+                  "id": 238,
+                  "haschildren": false,
+                  "count": 15,
+                  "name": "Neo Soul",
+                  "parentid": 232
+                },
+                {
+                  "id": 239,
+                  "haschildren": false,
+                  "count": 2,
+                  "name": "Quiet Storm",
+                  "parentid": 232
+                },
+                {
+                  "id": 240,
+                  "haschildren": false,
+                  "count": 171,
+                  "name": "Soul",
+                  "parentid": 232
+                },
+                {
+                  "id": 241,
+                  "haschildren": false,
+                  "count": 71,
+                  "name": "Urban Contemporary",
+                  "parentid": 232
+                }
+              ]
+            },
+            "id": 232,
+            "haschildren": true,
+            "count": 362,
+            "name": "R&amp;B and Urban",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 111,
+                  "haschildren": false,
+                  "count": 6,
+                  "name": "Alternative Rap",
+                  "parentid": 110
+                },
+                {
+                  "id": 112,
+                  "haschildren": false,
+                  "count": 12,
+                  "name": "Dirty South",
+                  "parentid": 110
+                },
+                {
+                  "id": 113,
+                  "haschildren": false,
+                  "count": 4,
+                  "name": "East Coast Rap",
+                  "parentid": 110
+                },
+                {
+                  "id": 114,
+                  "haschildren": false,
+                  "count": 55,
+                  "name": "Freestyle",
+                  "parentid": 110
+                },
+                {
+                  "id": 116,
+                  "haschildren": false,
+                  "count": 66,
+                  "name": "Gangsta Rap",
+                  "parentid": 110
+                },
+                {
+                  "id": 115,
+                  "haschildren": false,
+                  "count": 673,
+                  "name": "Hip Hop",
+                  "parentid": 110
+                },
+                {
+                  "id": 117,
+                  "haschildren": false,
+                  "count": 174,
+                  "name": "Mixtapes",
+                  "parentid": 110
+                },
+                {
+                  "id": 118,
+                  "haschildren": false,
+                  "count": 28,
+                  "name": "Old School",
+                  "parentid": 110
+                },
+                {
+                  "id": 119,
+                  "haschildren": false,
+                  "count": 1,
+                  "name": "Turntablism",
+                  "parentid": 110
+                },
+                {
+                  "id": 120,
+                  "haschildren": false,
+                  "count": 23,
+                  "name": "Underground Hip Hop",
+                  "parentid": 110
+                },
+                {
+                  "id": 121,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "West Coast Rap",
+                  "parentid": 110
+                }
+              ]
+            },
+            "id": 110,
+            "haschildren": true,
+            "count": 203,
+            "name": "Rap",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 243,
+                  "haschildren": false,
+                  "count": 16,
+                  "name": "Contemporary Reggae",
+                  "parentid": 242
+                },
+                {
+                  "id": 244,
+                  "haschildren": false,
+                  "count": 104,
+                  "name": "Dancehall",
+                  "parentid": 242
+                },
+                {
+                  "id": 245,
+                  "haschildren": false,
+                  "count": 34,
+                  "name": "Dub",
+                  "parentid": 242
+                },
+                {
+                  "id": 246,
+                  "haschildren": false,
+                  "count": 17,
+                  "name": "Pop Reggae",
+                  "parentid": 242
+                },
+                {
+                  "id": 247,
+                  "haschildren": false,
+                  "count": 4,
+                  "name": "Ragga",
+                  "parentid": 242
+                },
+                {
+                  "id": 249,
+                  "haschildren": false,
+                  "count": 23,
+                  "name": "Reggae Roots",
+                  "parentid": 242
+                },
+                {
+                  "id": 248,
+                  "haschildren": false,
+                  "count": 1,
+                  "name": "Rock Steady",
+                  "parentid": 242
+                }
+              ]
+            },
+            "id": 242,
+            "haschildren": true,
+            "count": 258,
+            "name": "Reggae",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 251,
+                  "haschildren": false,
+                  "count": 15,
+                  "name": "Adult Album Alternative",
+                  "parentid": 250
+                },
+                {
+                  "id": 252,
+                  "haschildren": false,
+                  "name": "British Invasion",
+                  "parentid": 250
+                },
+                {
+                  "id": 310,
+                  "haschildren": false,
+                  "count": 7,
+                  "name": "Celtic Rock",
+                  "parentid": 250
+                },
+                {
+                  "id": 253,
+                  "haschildren": false,
+                  "count": 438,
+                  "name": "Classic Rock",
+                  "parentid": 250
+                },
+                {
+                  "id": 254,
+                  "haschildren": false,
+                  "count": 17,
+                  "name": "Garage Rock",
+                  "parentid": 250
+                },
+                {
+                  "id": 255,
+                  "haschildren": false,
+                  "count": 20,
+                  "name": "Glam",
+                  "parentid": 250
+                },
+                {
+                  "id": 256,
+                  "haschildren": false,
+                  "count": 158,
+                  "name": "Hard Rock",
+                  "parentid": 250
+                },
+                {
+                  "id": 257,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "Jam Bands",
+                  "parentid": 250
+                },
+                {
+                  "id": 306,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "JROCK",
+                  "parentid": 250
+                },
+                {
+                  "id": 258,
+                  "haschildren": false,
+                  "name": "Piano Rock",
+                  "parentid": 250
+                },
+                {
+                  "id": 259,
+                  "haschildren": false,
+                  "count": 72,
+                  "name": "Prog Rock",
+                  "parentid": 250
+                },
+                {
+                  "id": 260,
+                  "haschildren": false,
+                  "count": 27,
+                  "name": "Psychedelic",
+                  "parentid": 250
+                },
+                {
+                  "id": 261,
+                  "haschildren": false,
+                  "count": 191,
+                  "name": "Rock &amp; Roll",
+                  "parentid": 250
+                },
+                {
+                  "id": 262,
+                  "haschildren": false,
+                  "count": 58,
+                  "name": "Rockabilly",
+                  "parentid": 250
+                },
+                {
+                  "id": 263,
+                  "haschildren": false,
+                  "count": 6,
+                  "name": "Singer and Songwriter",
+                  "parentid": 250
+                },
+                {
+                  "id": 264,
+                  "haschildren": false,
+                  "count": 6,
+                  "name": "Surf",
+                  "parentid": 250
+                }
+              ]
+            },
+            "id": 250,
+            "haschildren": true,
+            "count": 2016,
+            "name": "Rock",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 266,
+                  "haschildren": false,
+                  "name": "Anniversary",
+                  "parentid": 265
+                },
+                {
+                  "id": 267,
+                  "haschildren": false,
+                  "name": "Birthday",
+                  "parentid": 265
+                },
+                {
+                  "id": 268,
+                  "haschildren": false,
+                  "count": 195,
+                  "name": "Christmas",
+                  "parentid": 265
+                },
+                {
+                  "id": 269,
+                  "haschildren": false,
+                  "count": 12,
+                  "name": "Halloween",
+                  "parentid": 265
+                },
+                {
+                  "id": 270,
+                  "haschildren": false,
+                  "name": "Hanukkah",
+                  "parentid": 265
+                },
+                {
+                  "id": 271,
+                  "haschildren": false,
+                  "count": 1,
+                  "name": "Honeymoon",
+                  "parentid": 265
+                },
+                {
+                  "id": 272,
+                  "haschildren": false,
+                  "name": "Kwanzaa",
+                  "parentid": 265
+                },
+                {
+                  "id": 273,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "Valentine",
+                  "parentid": 265
+                },
+                {
+                  "id": 274,
+                  "haschildren": false,
+                  "name": "Wedding",
+                  "parentid": 265
+                },
+                {
+                  "id": 275,
+                  "haschildren": false,
+                  "count": 11,
+                  "name": "Winter",
+                  "parentid": 265
+                }
+              ]
+            },
+            "id": 265,
+            "haschildren": true,
+            "count": 27,
+            "name": "Seasonal and Holiday",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 277,
+                  "haschildren": false,
+                  "count": 27,
+                  "name": "Anime",
+                  "parentid": 276
+                },
+                {
+                  "id": 278,
+                  "haschildren": false,
+                  "count": 75,
+                  "name": "Kids",
+                  "parentid": 276
+                },
+                {
+                  "id": 279,
+                  "haschildren": false,
+                  "count": 12,
+                  "name": "Original Score",
+                  "parentid": 276
+                },
+                {
+                  "id": 280,
+                  "haschildren": false,
+                  "count": 20,
+                  "name": "Showtunes",
+                  "parentid": 276
+                },
+                {
+                  "id": 281,
+                  "haschildren": false,
+                  "count": 59,
+                  "name": "Video Game Music",
+                  "parentid": 276
+                }
+              ]
+            },
+            "id": 276,
+            "haschildren": true,
+            "count": 119,
+            "name": "Soundtracks",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 296,
+                  "haschildren": false,
+                  "count": 6,
+                  "name": "BlogTalk",
+                  "parentid": 282
+                },
+                {
+                  "id": 283,
+                  "haschildren": false,
+                  "count": 98,
+                  "name": "Comedy",
+                  "parentid": 282
+                },
+                {
+                  "id": 284,
+                  "haschildren": false,
+                  "count": 120,
+                  "name": "Community",
+                  "parentid": 282
+                },
+                {
+                  "id": 285,
+                  "haschildren": false,
+                  "count": 86,
+                  "name": "Educational",
+                  "parentid": 282
+                },
+                {
+                  "id": 286,
+                  "haschildren": false,
+                  "count": 5,
+                  "name": "Government",
+                  "parentid": 282
+                },
+                {
+                  "id": 287,
+                  "haschildren": false,
+                  "count": 519,
+                  "name": "News",
+                  "parentid": 282
+                },
+                {
+                  "id": 288,
+                  "haschildren": false,
+                  "count": 50,
+                  "name": "Old Time Radio",
+                  "parentid": 282
+                },
+                {
+                  "id": 289,
+                  "haschildren": false,
+                  "count": 163,
+                  "name": "Other Talk",
+                  "parentid": 282
+                },
+                {
+                  "id": 290,
+                  "haschildren": false,
+                  "count": 39,
+                  "name": "Political",
+                  "parentid": 282
+                },
+                {
+                  "id": 291,
+                  "haschildren": false,
+                  "count": 32,
+                  "name": "Scanner",
+                  "parentid": 282
+                },
+                {
+                  "id": 292,
+                  "haschildren": false,
+                  "count": 28,
+                  "name": "Spoken Word",
+                  "parentid": 282
+                },
+                {
+                  "id": 293,
+                  "haschildren": false,
+                  "count": 232,
+                  "name": "Sports",
+                  "parentid": 282
+                },
+                {
+                  "id": 294,
+                  "haschildren": false,
+                  "count": 14,
+                  "name": "Technology",
+                  "parentid": 282
+                }
+              ]
+            },
+            "id": 282,
+            "haschildren": true,
+            "count": 1018,
+            "name": "Talk",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 90,
+                  "haschildren": false,
+                  "count": 172,
+                  "name": "Adult",
+                  "parentid": 89
+                },
+                {
+                  "id": 91,
+                  "haschildren": false,
+                  "count": 125,
+                  "name": "Best Of",
+                  "parentid": 89
+                },
+                {
+                  "id": 92,
+                  "haschildren": false,
+                  "count": 369,
+                  "name": "Chill",
+                  "parentid": 89
+                },
+                {
+                  "id": 93,
+                  "haschildren": false,
+                  "count": 92,
+                  "name": "Eclectic",
+                  "parentid": 89
+                },
+                {
+                  "id": 94,
+                  "haschildren": false,
+                  "count": 54,
+                  "name": "Experimental",
+                  "parentid": 89
+                },
+                {
+                  "id": 95,
+                  "haschildren": false,
+                  "name": "Female",
+                  "parentid": 89
+                },
+                {
+                  "id": 96,
+                  "haschildren": false,
+                  "count": 4,
+                  "name": "Heartache",
+                  "parentid": 89
+                },
+                {
+                  "id": 97,
+                  "haschildren": false,
+                  "count": 29,
+                  "name": "Instrumental",
+                  "parentid": 89
+                },
+                {
+                  "id": 98,
+                  "haschildren": false,
+                  "count": 11,
+                  "name": "LGBT",
+                  "parentid": 89
+                },
+                {
+                  "id": 99,
+                  "haschildren": false,
+                  "count": 72,
+                  "name": "Love and Romance",
+                  "parentid": 89
+                },
+                {
+                  "id": 100,
+                  "haschildren": false,
+                  "count": 17,
+                  "name": "Party Mix",
+                  "parentid": 89
+                },
+                {
+                  "id": 101,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "Patriotic",
+                  "parentid": 89
+                },
+                {
+                  "id": 102,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "Rainy Day Mix",
+                  "parentid": 89
+                },
+                {
+                  "id": 103,
+                  "haschildren": false,
+                  "count": 6,
+                  "name": "Reality",
+                  "parentid": 89
+                },
+                {
+                  "id": 104,
+                  "haschildren": false,
+                  "count": 3,
+                  "name": "Sexy",
+                  "parentid": 89
+                },
+                {
+                  "id": 105,
+                  "haschildren": false,
+                  "count": 10,
+                  "name": "Shuffle",
+                  "parentid": 89
+                },
+                {
+                  "id": 106,
+                  "haschildren": false,
+                  "count": 7,
+                  "name": "Travel Mix",
+                  "parentid": 89
+                },
+                {
+                  "id": 107,
+                  "haschildren": false,
+                  "name": "Tribute",
+                  "parentid": 89
+                },
+                {
+                  "id": 108,
+                  "haschildren": false,
+                  "count": 1,
+                  "name": "Trippy",
+                  "parentid": 89
+                },
+                {
+                  "id": 109,
+                  "haschildren": false,
+                  "count": 11,
+                  "name": "Work Mix",
+                  "parentid": 89
+                }
+              ]
+            },
+            "id": 89,
+            "haschildren": true,
+            "count": 11,
+            "name": "Themes",
+            "parentid": 0
+          }
+        ]
+      }
+    },
+    "statusText": "Ok"
+  }
+}
+
+
+Abbreviated genre listing:
+
+{
+  "response": {
+    "statusCode": 200,
+    "data": {
+      "genrelist": {
+        "genre": [
+          {
+            "id": 295,
+            "haschildren": false,
+            "count": 6332,
+            "name": "Misc",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 266,
+                  "haschildren": false,
+                  "name": "Anniversary",
+                  "parentid": 265
+                },
+                {
+                  "id": 267,
+                  "haschildren": false,
+                  "name": "Birthday",
+                  "parentid": 265
+                }
+              ]
+            },
+            "id": 265,
+            "haschildren": true,
+            "count": 27,
+            "name": "Seasonal and Holiday",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 277,
+                  "haschildren": false,
+                  "count": 27,
+                  "name": "Anime",
+                  "parentid": 276
+                },
+                {
+                  "id": 278,
+                  "haschildren": false,
+                  "count": 75,
+                  "name": "Kids",
+                  "parentid": 276
+                }
+              ]
+            },
+            "id": 276,
+            "haschildren": true,
+            "count": 119,
+            "name": "Soundtracks",
+            "parentid": 0
+          }
+        ]
+      }
+    },
+    "statusText": "Ok"
+  }
+}

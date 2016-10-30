@@ -177,7 +177,7 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
 
         if (intent.getAction() == ACTION_GET_GENRES) {
             Log.i(TAG, "GET_GENRES received");
-            DirectoryClient dc = new DirectoryClient(new HTTPClient());
+            DirectoryClient dc = new DirectoryClient(this);
             dc.queryGenres(new IGenreListQueryListener() {
                 @Override
                 public void onError() {
@@ -186,39 +186,39 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
 
                 @Override
                 public void onResultReturned(Genre[] genres) {
-                    int genreCount = 0;
-                    class DecGenre {
-                        Genre g;
-                        boolean dec;
-                    }
-                    DecGenre[] dec = new DecGenre[genres.length];
-                    for (int i = 0; i < genres.length; i++) {
-                        dec[i] = new DecGenre();
-                        dec[i].g = genres[i];
-                    }
-                    //For each top level genre, we want to print its children. (I'm guessing these are only genre and sub genre?)
-                    for (int i = 0; i< genres.length; i++) {
-                        if (genres[i].isHasChildren()) {
-                            genreCount++;
-                            dec[i].dec = true;
-
-                            Log.i(TAG, "+" + genres[i].getName());
-                            for (int j = 0; j < genres.length; j++) {
-                                if (genres[j].getParentID() == genres[i].getId()) {
-                                    genreCount++;
-                                    dec[j].dec = true;
-                                    Log.i(TAG, "--" + genres[j].getName());
-                                }
-                            }
-                        }
-                    }
-                    Log.i(TAG, "Counted " + genreCount + " genres, compare that to " + genres.length);
-
-                    for (DecGenre g : dec) {
-                        if (!g.dec) {
-                            Log.i(TAG, "nondec " + g.g.getName());
-                        }
-                    }
+//                    int genreCount = 0;
+//                    class DecGenre {
+//                        Genre g;
+//                        boolean dec;
+//                    }
+//                    DecGenre[] dec = new DecGenre[genres.length];
+//                    for (int i = 0; i < genres.length; i++) {
+//                        dec[i] = new DecGenre();
+//                        dec[i].g = genres[i];
+//                    }
+//                    //For each top level genre, we want to print its children. (I'm guessing these are only genre and sub genre?)
+//                    for (int i = 0; i< genres.length; i++) {
+//                        if (genres[i].getChildren().size() != 0) {
+//                            genreCount++;
+//                            dec[i].dec = true;
+//
+//                            Log.i(TAG, "+" + genres[i].getName());
+//                            for (int j = 0; j < genres.length; j++) {
+//                                if (genres[j].getParentID() == genres[i].getId()) {
+//                                    genreCount++;
+//                                    dec[j].dec = true;
+//                                    Log.i(TAG, "--" + genres[j].getName());
+//                                }
+//                            }
+//                        }
+//                    }
+//                    Log.i(TAG, "Counted " + genreCount + " genres, compare that to " + genres.length);
+//
+//                    for (DecGenre g : dec) {
+//                        if (!g.dec) {
+//                            Log.i(TAG, "nondec " + g.g.getName());
+//                        }
+//                    }
                 }
             }, null);
         }

@@ -1,14 +1,30 @@
 package com.jacobarau.shoutcast;
 
+import android.content.Context;
+import android.text.Html;
 import android.util.Log;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
 
 /**
  * Created by jacob on 10/14/16.
@@ -16,12 +32,13 @@ import java.util.ArrayList;
 
 public class DirectoryClient {
     private static final String TAG = "DirectoryClient";
-    IHTTPClient client;
 
     final String DEVELOPER_KEY = "***REMOVED***";
 
-    public DirectoryClient(IHTTPClient httpClient) {
-        client = httpClient;
+    RequestQueue requestQueue = null;
+
+    public DirectoryClient(Context ctx) {
+        requestQueue = Volley.newRequestQueue(ctx);
     }
 
     /**
@@ -87,60 +104,73 @@ public class DirectoryClient {
         if (parent != null) {
             id = parent.getId();
         }
-        url = "http://api.shoutcast.com/genre/secondary?parentid=" + id + "&k=" + DEVELOPER_KEY + "&f=xml";
-        client.httpGet(url, new IHTTPClientListener() {
-            @Override
-            public void onError(String message) {
-                Log.e(TAG, "Error callback from HTTP listener. '" + message + "'");
-            }
+        url = "http://api.shoutcast.com/genre/secondary?parentid=" + id + "&k=" + DEVELOPER_KEY + "&f=json";
 
+        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
             @Override
-            public void onResult(String resultBody) {
-                Log.i(TAG, "onResult: " + resultBody);
-                XmlPullParserFactory factory = null;
+            public void onResponse(JSONObject response) {
                 try {
-                    factory = XmlPullParserFactory.newInstance();
-                } catch (XmlPullParserException e) {
-                    e.printStackTrace();
-                }
-                factory.setNamespaceAware(true);
-                ArrayList<Genre> genres = new ArrayList<Genre>();
-                try {
-                    XmlPullParser xpp = factory.newPullParser();
-                    xpp.setInput( new StringReader( resultBody ) );
-                    int eventType = xpp.getEventType();
-                    while (eventType != XmlPullParser.END_DOCUMENT) {
-                        if(eventType == XmlPullParser.START_DOCUMENT) {
-                            System.out.println("Start document");
-                        } else if(eventType == XmlPullParser.START_TAG) {
-                            System.out.println("Start tag "+xpp.getName());
-                            if (xpp.getName().equals("genre")) {
-                                Log.i(TAG, "name = " + (String)xpp.getAttributeValue(null,"name"));
-                                Log.i(TAG, "id = " + (String)xpp.getAttributeValue(null,"id"));
-                                Log.i(TAG, "parentid = " + (String)xpp.getAttributeValue(null,"parentid"));
-                                Log.i(TAG, "haschildren = " + xpp.getAttributeValue(null,"haschildren"));
-                                Genre g = new Genre((String)xpp.getAttributeValue(null,"name"), Integer.decode((String)xpp.getAttributeValue(null,"id")), Integer.decode((String)xpp.getAttributeValue(null,"parentid")), xpp.getAttributeValue(null,"haschildren").equals("true"));
-                                genres.add(g);
-                            }
-                        } else if(eventType == XmlPullParser.END_TAG) {
-                            System.out.println("End tag "+xpp.getName());
-                        } else if(eventType == XmlPullParser.TEXT) {
-                            System.out.println("Text "+xpp.getText());
-                        }
-                        eventType = xpp.next();
+                    Log.i(TAG, "onResponse; got JSONObject " + response.toString(4));
+                    if (response.getJSONObject("response").getInt("statusCode") != 200) {
+                        Log.e(TAG, "response.statusCode != 200 trying to get genre list");
+                        listener.onError();
+                        return;
                     }
-                    System.out.println("End document");
 
-                    Genre[] genresArray = new Genre[genres.size()];
-                    genresArray = genres.toArray(genresArray);
-                    listener.onResultReturned(genresArray);
-                } catch (XmlPullParserException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    class GenreNode {
+                        JSONObject children;
+                        Genre parentGenre;
+
+                        GenreNode(JSONObject children, Genre parentGenre) {
+                            this.children = children;
+                            this.parentGenre = parentGenre;
+                        }
+                    }
+                    Queue<GenreNode> nodes = new LinkedList<>();
+                    JSONObject baseDataNode = response.getJSONObject("response").getJSONObject("data");
+                    Genre rootGenre = new Genre("(imaginary root genre)", 0, null);
+                    nodes.add(new GenreNode(baseDataNode, rootGenre));
+                    GenreNode node = nodes.poll();
+                    while (node != null) {
+                        Log.i(TAG, "Processing node with parent named " + node.parentGenre.getName());
+                        //We know this node has children. Enumerate them, create Genre objects for each,
+                        //and if they have children, create GenreNodes for them so they can be explored
+                        //too.
+
+                        JSONArray genreList = node.children.getJSONObject("genrelist").getJSONArray("genre");
+                        for (int i = 0; i < genreList.length(); i++) {
+                            JSONObject genre = genreList.getJSONObject(i);
+                            String name = StringEscapeUtils.unescapeHtml4(genre.getString("name"));
+                            int id = genre.getInt("id");
+                            Genre child = new Genre(name, id, node.parentGenre);
+                            Log.i(TAG, "A child is named " + name + " with ID " + id);
+                            node.parentGenre.addChild(child);
+
+                            if (genre.getBoolean("haschildren")) {
+                                Log.i(TAG, "Child has children. Adding node to visit later.");
+                                nodes.add(new GenreNode(genre, child));
+                            }
+                        }
+
+                        node = nodes.poll();
+                    }
+
+                    Genre[] ret = new Genre[rootGenre.getChildren().size()];
+                    ret = rootGenre.getChildren().toArray(ret);
+                    listener.onResultReturned(ret);
+                } catch (JSONException e) {
+                    Log.e(TAG, "JSON exception trying to get genre list.", e);
+                    listener.onError();
                 }
-
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e(TAG, "Volley Error returned..." + error);
+                listener.onError();
             }
         });
+
+        requestQueue.add(req);
     }
 }
