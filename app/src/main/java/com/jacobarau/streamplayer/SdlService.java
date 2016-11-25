@@ -412,7 +412,10 @@ public class SdlService extends Service implements IProxyListenerALM{
 
 				@Override
 				public void onNext(List<Genre> genres) {
-
+					GenreTreeConversionResult result = convertGenreList(genres);
+					for (CreateInteractionChoiceSet cs : result.choiceSets) {
+						SdlService.this.sendRpcRequest(cs);
+					}
 				}
 			});
 
