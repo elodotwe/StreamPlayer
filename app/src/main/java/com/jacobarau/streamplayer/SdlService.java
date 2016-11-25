@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.jacobarau.shoutcast.DirectoryClient;
+import com.jacobarau.shoutcast.Genre;
 import com.smartdevicelink.exception.SdlException;
 import com.smartdevicelink.exception.SdlExceptionCause;
 import com.smartdevicelink.proxy.RPCRequest;
@@ -18,6 +20,8 @@ import com.smartdevicelink.proxy.rpc.AddSubMenuResponse;
 import com.smartdevicelink.proxy.rpc.AlertManeuverResponse;
 import com.smartdevicelink.proxy.rpc.AlertResponse;
 import com.smartdevicelink.proxy.rpc.ChangeRegistrationResponse;
+import com.smartdevicelink.proxy.rpc.Choice;
+import com.smartdevicelink.proxy.rpc.CreateInteractionChoiceSet;
 import com.smartdevicelink.proxy.rpc.CreateInteractionChoiceSetResponse;
 import com.smartdevicelink.proxy.rpc.DeleteCommandResponse;
 import com.smartdevicelink.proxy.rpc.DeleteFileResponse;
@@ -86,7 +90,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.Callable;
+
+import rx.Single;
+import rx.Subscriber;
+import rx.schedulers.Schedulers;
 
 public class SdlService extends Service implements IProxyListenerALM{
 
@@ -115,9 +126,28 @@ public class SdlService extends Service implements IProxyListenerALM{
 	private boolean lockscreenDisplayed = false;
 
 	private boolean firstNonHmiNone = true;
-	
-	
-	
+
+
+	//Represents the choice set for refinement of a given genre
+	//(for instance, genre = "Decades" and children would include
+	//"20s", "30s", "40s"...etc)
+	public class GenreNode {
+		Genre genre;
+		//Index in this List is the choice ID to SYNC.
+		List<GenreNode> children;
+		//This will be null if there are no children.
+		//This is the ID for the choice set containing this genre's children.
+		Integer choiceSetID;
+	}
+
+	public class GenreTreeConversionResult {
+		List<GenreNode> topLevel;
+		//These get passed out like this just so that we don't have to recurse through the tree again.
+		//We will recurse through the tree as the user interacts later, but we want to fire all these
+		//at SYNC during initialization...
+		List<CreateInteractionChoiceSet> choiceSets;
+	}
+
 	@Override
 	public IBinder onBind(Intent intent) {
 		return null;
@@ -321,31 +351,13 @@ public class SdlService extends Service implements IProxyListenerALM{
 		stopSelf();
 	}
 
+
+
+
 	@Override
 	public void onOnHMIStatus(OnHMIStatus notification) {
 		if(notification.getHmiLevel().equals(HMILevel.HMI_FULL)){			
 			if (notification.getFirstRun()) {
-                AddCommand command = new AddCommand();
-                MenuParams params = new MenuParams();
-                params.setMenuName("Play");
-                command = new AddCommand();
-                command.setCmdID(1);
-                command.setMenuParams(params);
-                command.setVrCommands(Arrays.asList(new String[]{"Play"}));
-                sendRpcRequest(command);
-                command = new AddCommand();
-                params = new MenuParams();
-                params.setMenuName("Pause");
-                command = new AddCommand();
-                command.setCmdID(2);
-                command.setMenuParams(params);
-                command.setVrCommands(Arrays.asList(new String[]{"Pause"}));
-                sendRpcRequest(command);
-
-//                SetDisplayLayout layout = new SetDisplayLayout();
-//                layout.setDisplayLayout("MEDIA");
-//                sendRpcRequest(layout);
-
                 userWantsStreaming = true;
 
                 //TODO: There has to be a way to show a play and a pause icon separately. Perhaps
@@ -364,7 +376,46 @@ public class SdlService extends Service implements IProxyListenerALM{
 
 			//uploadImages();
 			firstNonHmiNone = false;
-			
+			AddCommand command = new AddCommand();
+			MenuParams params = new MenuParams();
+			params.setMenuName("Play");
+			command = new AddCommand();
+			command.setCmdID(1);
+			command.setMenuParams(params);
+			command.setVrCommands(Arrays.asList(new String[]{"Play"}));
+			sendRpcRequest(command);
+			command = new AddCommand();
+			params = new MenuParams();
+			params.setMenuName("Pause");
+			command = new AddCommand();
+			command.setCmdID(2);
+			command.setMenuParams(params);
+			command.setVrCommands(Arrays.asList(new String[]{"Pause"}));
+			sendRpcRequest(command);
+
+			Single.fromCallable(new Callable<List<Genre>>() {
+				@Override
+				public List<Genre> call() throws Exception {
+					DirectoryClient dc = new DirectoryClient();
+					return dc.queryGenres();
+				}
+			}).subscribeOn(Schedulers.io()).observeOn(Schedulers.trampoline()).subscribe(new Subscriber<List<Genre>>() {
+				@Override
+				public void onCompleted() {
+
+				}
+
+				@Override
+				public void onError(Throwable e) {
+
+				}
+
+				@Override
+				public void onNext(List<Genre> genres) {
+
+				}
+			});
+
 			// Other app setup (SubMenu, CreateChoiceSet, etc.) would go here
 		}else{
 			//We have HMI_NONE
@@ -386,7 +437,48 @@ public class SdlService extends Service implements IProxyListenerALM{
         }
 		Log.i(TAG, "HMI status is " + notification.getAudioStreamingState() + ", " + notification.getHmiLevel() + ", " + notification.getSystemContext() + ", first run " + notification.getFirstRun());
 	}
-	
+
+	public GenreTreeConversionResult convertGenreList(List<Genre> genres) {
+		return convertGenreList(genres, 0);
+	}
+
+	private GenreTreeConversionResult convertGenreList(List<Genre> genres, int startID) {
+		GenreTreeConversionResult result = new GenreTreeConversionResult();
+		result.choiceSets = new ArrayList<>();
+		result.topLevel = new ArrayList<>();
+
+		CreateInteractionChoiceSet topSet = new CreateInteractionChoiceSet();
+		topSet.setInteractionChoiceSetID(startID++);
+		List<Choice> topSetChoices = new ArrayList<>();
+		result.choiceSets.add(topSet);
+
+		for (int genre = 0; genre < genres.size(); genre++) {
+			GenreNode n = new GenreNode();
+			Genre g = genres.get(genre);
+			n.genre = g;
+			n.children = new ArrayList<>();
+
+			Choice c = new Choice();
+			c.setMenuName(g.getName());
+			//Choice IDs are not global--they can be reused as they only pertain to the
+			//choice set in front of the user at the moment.
+			//Setting this to the genre index lets us look at the genre node list later.
+			c.setChoiceID(genre);
+			topSetChoices.add(c);
+
+			if (g.getChildren().size() > 0) {
+				GenreTreeConversionResult children = convertGenreList(g.getChildren(), startID);
+				startID += children.choiceSets.size();
+				result.choiceSets.addAll(children.choiceSets);
+				n.children.addAll(children.topLevel);
+			}
+
+			result.topLevel.add(n);
+		}
+		topSet.setChoiceSet(topSetChoices);
+		return result;
+	}
+
 	/**
 	 * Will show a sample welcome message on screen as well as speak a sample welcome message
 	 */
