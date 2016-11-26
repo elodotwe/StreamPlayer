@@ -101,154 +101,154 @@ import rx.Single;
 import rx.Subscriber;
 import rx.schedulers.Schedulers;
 
-public class SdlService extends Service implements IProxyListenerALM{
+public class SdlService extends Service implements IProxyListenerALM {
 
-	private static final String TAG 					= "SDL Service";
+    private static final String TAG = "SDL Service";
 
-	private static final String APP_NAME 				= "Stream Player";
-	private static final String APP_ID 					= "98765432";
-	
-	private static final String ICON_FILENAME 			= "stream_player.png";
-	private int iconCorrelationId;
+    private static final String APP_NAME = "Stream Player";
+    private static final String APP_ID = "98765432";
+
+    private static final String ICON_FILENAME = "stream_player.png";
+    private int iconCorrelationId;
 
     private final String Radioseven = "http://188.65.154.167:8500";
 
     boolean userWantsStreaming = false;
 
-	List<String> remoteFiles;
-	
-	// variable used to increment correlation ID for every request sent to SYNC
-	public int autoIncCorrId = 0;
-	// variable to contain the current state of the service
-	private static SdlService instance = null;
+    List<String> remoteFiles;
 
-	// variable to create and call functions of the SyncProxy
-	private SdlProxyALM proxy = null;
+    // variable used to increment correlation ID for every request sent to SYNC
+    public int autoIncCorrId = 0;
+    // variable to contain the current state of the service
+    private static SdlService instance = null;
 
-	private boolean lockscreenDisplayed = false;
+    // variable to create and call functions of the SyncProxy
+    private SdlProxyALM proxy = null;
 
-	private boolean firstNonHmiNone = true;
+    private boolean lockscreenDisplayed = false;
+
+    private boolean firstNonHmiNone = true;
 
 
-	//Represents the choice set for refinement of a given genre
-	//(for instance, genre = "Decades" and children would include
-	//"20s", "30s", "40s"...etc)
-	public class GenreNode {
-		Genre genre;
-		//Integer key is the Choice ID that would need to be selected in the parent's ChoiceSet in order
+    //Represents the choice set for refinement of a given genre
+    //(for instance, genre = "Decades" and children would include
+    //"20s", "30s", "40s"...etc)
+    public class GenreNode {
+        Genre genre;
+        //Integer key is the Choice ID that would need to be selected in the parent's ChoiceSet in order
         //to reach that GenreNode.
-		Map<Integer, GenreNode> children;
+        Map<Integer, GenreNode> children;
         //Choice set ID to present all children in PerformInteraction to user (null if this is a leaf)
         Integer choiceSetID;
-	}
+    }
 
-	public class GenreTreeConversionResult {
-		Map<Integer, GenreNode> topLevel;
+    public class GenreTreeConversionResult {
+        Map<Integer, GenreNode> topLevel;
         int topLevelChoiceSetID;
 
-		//These get passed out like this just so that we don't have to recurse through the tree again.
-		//We will recurse through the tree as the user interacts later, but we want to fire all these
-		//at SYNC during initialization...
-		List<CreateInteractionChoiceSet> choiceSets;
-		//Used only during building of the data structure--number of contained Choices in structure.
-		int choiceCount;
-	}
+        //These get passed out like this just so that we don't have to recurse through the tree again.
+        //We will recurse through the tree as the user interacts later, but we want to fire all these
+        //at SYNC during initialization...
+        List<CreateInteractionChoiceSet> choiceSets;
+        //Used only during building of the data structure--number of contained Choices in structure.
+        int choiceCount;
+    }
 
-	@Override
-	public IBinder onBind(Intent intent) {
-		return null;
-	}
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
 
-	@Override
-	public void onCreate() {
-		super.onCreate();
-		instance = this;
-		remoteFiles = new ArrayList<String>();
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        instance = this;
+        remoteFiles = new ArrayList<String>();
 
         Log.d(TAG, "oncreate happened");
-	}
+    }
 
-	@Override
-	public int onStartCommand(Intent intent, int flags, int startId) {
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "start command happened");
-		if (intent != null) {
+        if (intent != null) {
             Log.d(TAG, "so did start proxy");
-			startProxy();
+            startProxy();
 
-		} else {
+        } else {
             Log.d(TAG, "intent was null, no starty");
         }
 
-		return START_STICKY;
-	}
+        return START_STICKY;
+    }
 
-	@Override
-	public void onDestroy() {
-		disposeSyncProxy();
-		//LockScreenManager.clearLockScreen();
-		instance = null;
-		super.onDestroy();
-	}
+    @Override
+    public void onDestroy() {
+        disposeSyncProxy();
+        //LockScreenManager.clearLockScreen();
+        instance = null;
+        super.onDestroy();
+    }
 
-	public static SdlService getInstance() {
-		return instance;
-	}
+    public static SdlService getInstance() {
+        return instance;
+    }
 
-	public SdlProxyALM getProxy() {
-		return proxy;
-	}
+    public SdlProxyALM getProxy() {
+        return proxy;
+    }
 
-	public void startProxy() {
-		if (proxy == null) {
-			try {
+    public void startProxy() {
+        if (proxy == null) {
+            try {
                 BaseTransportConfig xprt = new TCPTransportConfig(12345, "19.76.6.234", true); //.11 is VM, .6 is ALE
-				proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID);//, xprt);
+                proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID);//, xprt);
 
-			} catch (SdlException e) {
-				e.printStackTrace();
-				// error creating proxy, returned proxy = null
-				if (proxy == null) {
-					stopSelf();
-				}
-			}
-		}
-	}
+            } catch (SdlException e) {
+                e.printStackTrace();
+                // error creating proxy, returned proxy = null
+                if (proxy == null) {
+                    stopSelf();
+                }
+            }
+        }
+    }
 
-	public void disposeSyncProxy() {
-		if (proxy != null) {
-			try {
-				proxy.dispose();
-			} catch (SdlException e) {
-				e.printStackTrace();
-			}
-			proxy = null;
-			//LockScreenManager.clearLockScreen();
-		}
-		this.firstNonHmiNone = true;
-		
-	}
+    public void disposeSyncProxy() {
+        if (proxy != null) {
+            try {
+                proxy.dispose();
+            } catch (SdlException e) {
+                e.printStackTrace();
+            }
+            proxy = null;
+            //LockScreenManager.clearLockScreen();
+        }
+        this.firstNonHmiNone = true;
 
-	public void reset() {
-		if (proxy != null) {
-			try {
-				proxy.resetProxy();
-				this.firstNonHmiNone = true;
-			} catch (SdlException e1) {
-				e1.printStackTrace();
-				//something goes wrong, & the proxy returns as null, stop the service.
-				// do not want a running service with a null proxy
-				if (proxy == null) {
-					stopSelf();
-				}
-			}
-		} else {
-			startProxy();
-		}
-	}
-	
-	/**
-	 *  Add commands for the app on SDL.
-	 */
+    }
+
+    public void reset() {
+        if (proxy != null) {
+            try {
+                proxy.resetProxy();
+                this.firstNonHmiNone = true;
+            } catch (SdlException e1) {
+                e1.printStackTrace();
+                //something goes wrong, & the proxy returns as null, stop the service.
+                // do not want a running service with a null proxy
+                if (proxy == null) {
+                    stopSelf();
+                }
+            }
+        } else {
+            startProxy();
+        }
+    }
+
+    /**
+     *  Add commands for the app on SDL.
+     */
 //	public void sendCommands(){
 //		AddCommand command = new AddCommand();
 //		MenuParams params = new MenuParams();
@@ -260,119 +260,121 @@ public class SdlService extends Service implements IProxyListenerALM{
 //		sendRpcRequest(command);
 //	}
 
-	/**
-	 * Sends an RPC Request to the connected head unit. Automatically adds a correlation id.
-	 * @param request
-	 */
-	private void sendRpcRequest(RPCRequest request){
-		request.setCorrelationID(autoIncCorrId++);
-		try {
-			proxy.sendRPCRequest(request);
-		} catch (SdlException e) {
-			e.printStackTrace();
-		}
-	}
-	/**
-	 * Sends the app icon through the uploadImage method with correct params
-	 * @throws SdlException
-	 */
-	private void sendIcon() throws SdlException {
-		iconCorrelationId = autoIncCorrId++;
-		uploadImage(R.drawable.ic_launcher, ICON_FILENAME, iconCorrelationId, true);
-	}
-	
-	/**
-	 * This method will help upload an image to the head unit
-	 * @param resource the R.drawable.__ value of the image you wish to send
-	 * @param imageName the filename that will be used to reference this image
-	 * @param correlationId the correlation id to be used with this request. Helpful for monitoring putfileresponses
-	 * @param isPersistent tell the system if the file should stay or be cleared out after connection.
-	 */
-	private void uploadImage(int resource, String imageName,int correlationId, boolean isPersistent){
-		PutFile putFile = new PutFile();
-		putFile.setFileType(FileType.GRAPHIC_PNG);
-		putFile.setSdlFileName(imageName);
-		putFile.setCorrelationID(correlationId);
-		putFile.setPersistentFile(isPersistent);
-		putFile.setSystemFile(false);
-		putFile.setBulkData(contentsOfResource(resource));
+    /**
+     * Sends an RPC Request to the connected head unit. Automatically adds a correlation id.
+     *
+     * @param request
+     */
+    private void sendRpcRequest(RPCRequest request) {
+        request.setCorrelationID(autoIncCorrId++);
+        try {
+            proxy.sendRPCRequest(request);
+        } catch (SdlException e) {
+            e.printStackTrace();
+        }
+    }
 
-		try {
-			proxy.sendRPCRequest(putFile);
-		} catch (SdlException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	/**
-	 * Helper method to take resource files and turn them into byte arrays
-	 * @param resource
-	 * @return
-	 */
-	private byte[] contentsOfResource(int resource) {
-		InputStream is = null;
-		try {
-			is = getResources().openRawResource(resource);
-			ByteArrayOutputStream os = new ByteArrayOutputStream(is.available());
-			final int buffersize = 4096;
-			final byte[] buffer = new byte[buffersize];
-			int available = 0;
-			while ((available = is.read(buffer)) >= 0) {
-				os.write(buffer, 0, available);
-			}
-			return os.toByteArray();
-		} catch (IOException e) {
-			Log.w("SDL Service", "Can't read icon file", e);
-			return null;
-		} finally {
-			if (is != null) {
-				try {
-					is.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}
+    /**
+     * Sends the app icon through the uploadImage method with correct params
+     *
+     * @throws SdlException
+     */
+    private void sendIcon() throws SdlException {
+        iconCorrelationId = autoIncCorrId++;
+        uploadImage(R.drawable.ic_launcher, ICON_FILENAME, iconCorrelationId, true);
+    }
 
-	@Override
-	public void onProxyClosed(String info, Exception e, SdlDisconnectedReason reason) {
+    /**
+     * This method will help upload an image to the head unit
+     *
+     * @param resource      the R.drawable.__ value of the image you wish to send
+     * @param imageName     the filename that will be used to reference this image
+     * @param correlationId the correlation id to be used with this request. Helpful for monitoring putfileresponses
+     * @param isPersistent  tell the system if the file should stay or be cleared out after connection.
+     */
+    private void uploadImage(int resource, String imageName, int correlationId, boolean isPersistent) {
+        PutFile putFile = new PutFile();
+        putFile.setFileType(FileType.GRAPHIC_PNG);
+        putFile.setSdlFileName(imageName);
+        putFile.setCorrelationID(correlationId);
+        putFile.setPersistentFile(isPersistent);
+        putFile.setSystemFile(false);
+        putFile.setBulkData(contentsOfResource(resource));
 
-		if(!(e instanceof SdlException)){
-			Log.v(TAG, "reset proxy in onproxy closed");
-			reset();
-		}
-		else if ((((SdlException) e).getSdlExceptionCause() != SdlExceptionCause.SDL_PROXY_CYCLED))
-		{
-			if (((SdlException) e).getSdlExceptionCause() != SdlExceptionCause.BLUETOOTH_DISABLED) 
-			{
-				Log.v(TAG, "reset proxy in onproxy closed");
-				reset();
-			}
-		}
+        try {
+            proxy.sendRPCRequest(putFile);
+        } catch (SdlException e) {
+            e.printStackTrace();
+        }
+    }
 
-		clearLockScreen();
+    /**
+     * Helper method to take resource files and turn them into byte arrays
+     *
+     * @param resource
+     * @return
+     */
+    private byte[] contentsOfResource(int resource) {
+        InputStream is = null;
+        try {
+            is = getResources().openRawResource(resource);
+            ByteArrayOutputStream os = new ByteArrayOutputStream(is.available());
+            final int buffersize = 4096;
+            final byte[] buffer = new byte[buffersize];
+            int available = 0;
+            while ((available = is.read(buffer)) >= 0) {
+                os.write(buffer, 0, available);
+            }
+            return os.toByteArray();
+        } catch (IOException e) {
+            Log.w("SDL Service", "Can't read icon file", e);
+            return null;
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onProxyClosed(String info, Exception e, SdlDisconnectedReason reason) {
+
+        if (!(e instanceof SdlException)) {
+            Log.v(TAG, "reset proxy in onproxy closed");
+            reset();
+        } else if ((((SdlException) e).getSdlExceptionCause() != SdlExceptionCause.SDL_PROXY_CYCLED)) {
+            if (((SdlException) e).getSdlExceptionCause() != SdlExceptionCause.BLUETOOTH_DISABLED) {
+                Log.v(TAG, "reset proxy in onproxy closed");
+                reset();
+            }
+        }
+
+        clearLockScreen();
 
         StreamingService.stopPlaying(this);
-		stopSelf();
-	}
+        stopSelf();
+    }
 
 
-	private void addCommand(String name, int cmdID) {
-		AddCommand command;
-		MenuParams params = new MenuParams();
-		params.setMenuName(name);
-		command = new AddCommand();
-		command.setCmdID(cmdID);
-		command.setMenuParams(params);
-		command.setVrCommands(Arrays.asList(new String[]{name}));
-		sendRpcRequest(command);
-	}
+    private void addCommand(String name, int cmdID) {
+        AddCommand command;
+        MenuParams params = new MenuParams();
+        params.setMenuName(name);
+        command = new AddCommand();
+        command.setCmdID(cmdID);
+        command.setMenuParams(params);
+        command.setVrCommands(Arrays.asList(new String[]{name}));
+        sendRpcRequest(command);
+    }
 
-	@Override
-	public void onOnHMIStatus(OnHMIStatus notification) {
-		if(notification.getHmiLevel().equals(HMILevel.HMI_FULL)){			
-			if (notification.getFirstRun()) {
+    @Override
+    public void onOnHMIStatus(OnHMIStatus notification) {
+        if (notification.getHmiLevel().equals(HMILevel.HMI_FULL)) {
+            if (notification.getFirstRun()) {
                 userWantsStreaming = true;
 
                 //TODO: There has to be a way to show a play and a pause icon separately. Perhaps
@@ -381,123 +383,123 @@ public class SdlService extends Service implements IProxyListenerALM{
                 SubscribeButton but = new SubscribeButton();
                 but.setButtonName(ButtonName.OK);
                 sendRpcRequest(but);
-			}
-			// Other HMI (Show, PerformInteraction, etc.) would go here
-		}
-		
-		
-		if(!notification.getHmiLevel().equals(HMILevel.HMI_NONE)
-				&& firstNonHmiNone){
+            }
+            // Other HMI (Show, PerformInteraction, etc.) would go here
+        }
 
-			//uploadImages();
-			firstNonHmiNone = false;
-			addCommand("Play", 1);
-			addCommand("Pause", 2);
-			addCommand("Genres", 3);
 
-			Single.fromCallable(new Callable<List<Genre>>() {
-				@Override
-				public List<Genre> call() throws Exception {
-					DirectoryClient dc = new DirectoryClient();
-					return dc.queryGenres();
-				}
-			}).subscribeOn(Schedulers.io()).observeOn(Schedulers.trampoline()).subscribe(new Subscriber<List<Genre>>() {
-				@Override
-				public void onCompleted() {
+        if (!notification.getHmiLevel().equals(HMILevel.HMI_NONE)
+                && firstNonHmiNone) {
 
-				}
+            //uploadImages();
+            firstNonHmiNone = false;
+            addCommand("Play", 1);
+            addCommand("Pause", 2);
+            addCommand("Genres", 3);
 
-				@Override
-				public void onError(Throwable e) {
+            Single.fromCallable(new Callable<List<Genre>>() {
+                @Override
+                public List<Genre> call() throws Exception {
+                    DirectoryClient dc = new DirectoryClient();
+                    return dc.queryGenres();
+                }
+            }).subscribeOn(Schedulers.io()).observeOn(Schedulers.trampoline()).subscribe(new Subscriber<List<Genre>>() {
+                @Override
+                public void onCompleted() {
 
-				}
+                }
 
-				@Override
-				public void onNext(List<Genre> genres) {
-					GenreTreeConversionResult result = convertGenreList(genres);
-					for (CreateInteractionChoiceSet cs : result.choiceSets) {
-						SdlService.this.sendRpcRequest(cs);
-					}
-				}
-			});
+                @Override
+                public void onError(Throwable e) {
 
-			// Other app setup (SubMenu, CreateChoiceSet, etc.) would go here
-		}else{
-			//We have HMI_NONE
-			if(notification.getFirstRun()){
-				uploadImages();
-			}
-		}
+                }
 
-		if (notification.getAudioStreamingState().equals(AudioStreamingState.NOT_AUDIBLE)) {
+                @Override
+                public void onNext(List<Genre> genres) {
+                    GenreTreeConversionResult result = convertGenreList(genres);
+                    for (CreateInteractionChoiceSet cs : result.choiceSets) {
+                        SdlService.this.sendRpcRequest(cs);
+                    }
+                }
+            });
+
+            // Other app setup (SubMenu, CreateChoiceSet, etc.) would go here
+        } else {
+            //We have HMI_NONE
+            if (notification.getFirstRun()) {
+                uploadImages();
+            }
+        }
+
+        if (notification.getAudioStreamingState().equals(AudioStreamingState.NOT_AUDIBLE)) {
             if (userWantsStreaming) {
                 StreamingService.stopPlaying(this);
             }
         } else {
             if (userWantsStreaming) {
-				if (!StreamingService.isStreaming) {
+                if (!StreamingService.isStreaming) {
                     StreamingService.startPlaying(this, Radioseven);
                 }
             }
         }
-		Log.i(TAG, "HMI status is " + notification.getAudioStreamingState() + ", " + notification.getHmiLevel() + ", " + notification.getSystemContext() + ", first run " + notification.getFirstRun());
-	}
+        Log.i(TAG, "HMI status is " + notification.getAudioStreamingState() + ", " + notification.getHmiLevel() + ", " + notification.getSystemContext() + ", first run " + notification.getFirstRun());
+    }
 
-	public GenreTreeConversionResult convertGenreList(List<Genre> genres) {
-		return convertGenreList(genres, 0, 0);
-	}
+    public GenreTreeConversionResult convertGenreList(List<Genre> genres) {
+        return convertGenreList(genres, 0, 0);
+    }
 
-	private GenreTreeConversionResult convertGenreList(List<Genre> genres, int startInteractionID, int startChoiceID) {
-		GenreTreeConversionResult result = new GenreTreeConversionResult();
-		result.choiceSets = new ArrayList<>();
-		result.topLevel = new HashMap<>();
+    private GenreTreeConversionResult convertGenreList(List<Genre> genres, int startInteractionID, int startChoiceID) {
+        GenreTreeConversionResult result = new GenreTreeConversionResult();
+        result.choiceSets = new ArrayList<>();
+        result.topLevel = new HashMap<>();
 
-		CreateInteractionChoiceSet topSet = new CreateInteractionChoiceSet();
-		topSet.setInteractionChoiceSetID(startInteractionID++);
+        CreateInteractionChoiceSet topSet = new CreateInteractionChoiceSet();
+        topSet.setInteractionChoiceSetID(startInteractionID++);
         result.topLevelChoiceSetID = topSet.getInteractionChoiceSetID();
-		List<Choice> topSetChoices = new ArrayList<>();
-		result.choiceSets.add(topSet);
-		result.choiceCount = 0;
+        List<Choice> topSetChoices = new ArrayList<>();
+        result.choiceSets.add(topSet);
+        result.choiceCount = 0;
 
-		for (int genre = 0; genre < genres.size(); genre++) {
-			GenreNode n = new GenreNode();
-			Genre g = genres.get(genre);
-			n.genre = g;
-			n.children = new HashMap<>();
+        for (int genre = 0; genre < genres.size(); genre++) {
+            GenreNode n = new GenreNode();
+            Genre g = genres.get(genre);
+            n.genre = g;
+            n.children = new HashMap<>();
 
-			Choice c = new Choice();
-			c.setMenuName(g.getName());
-			//Choice IDs are global and must not collide.
-			//We pass startChoiceID into any recursive calls and increment it by the number of
-			//choices returned in order to keep from colliding.
-			c.setChoiceID(startChoiceID++);
+            Choice c = new Choice();
+            c.setMenuName(g.getName());
+            //Choice IDs are global and must not collide.
+            //We pass startChoiceID into any recursive calls and increment it by the number of
+            //choices returned in order to keep from colliding.
+            c.setChoiceID(startChoiceID++);
 
-			result.choiceCount++;
+            result.choiceCount++;
 
-			ArrayList<String> vrCommands = new ArrayList<>();
-			vrCommands.add(g.getName());
-			c.setVrCommands(vrCommands);
-			topSetChoices.add(c);
+            ArrayList<String> vrCommands = new ArrayList<>();
+            vrCommands.add(g.getName());
+            c.setVrCommands(vrCommands);
+            topSetChoices.add(c);
 
-			if (g.getChildren().size() > 0) {
-				GenreTreeConversionResult children = convertGenreList(g.getChildren(), startInteractionID, startChoiceID);
-				startInteractionID += children.choiceSets.size();
-				startChoiceID += children.choiceCount;
-				result.choiceCount += children.choiceCount;
-				result.choiceSets.addAll(children.choiceSets);
-				n.children.putAll(result.topLevel);
+            if (g.getChildren().size() > 0) {
+                GenreTreeConversionResult children = convertGenreList(g.getChildren(), startInteractionID, startChoiceID);
+                startInteractionID += children.choiceSets.size();
+                startChoiceID += children.choiceCount;
+                result.choiceCount += children.choiceCount;
+                result.choiceSets.addAll(children.choiceSets);
+                n.children.putAll(result.topLevel);
                 n.choiceSetID = children.topLevelChoiceSetID;
-			}
+            }
 
-			result.topLevel.put(c.getChoiceID(), n);
-		}
-		topSet.setChoiceSet(topSetChoices);
-		return result;
-	}
+            result.topLevel.put(c.getChoiceID(), n);
+        }
+        topSet.setChoiceSet(topSetChoices);
+        return result;
+    }
 
-	/**
-	 * Will show a sample welcome message on screen as well as speak a sample welcome message
-	 */
+    /**
+     * Will show a sample welcome message on screen as well as speak a sample welcome message
+     */
 //	private void performWelcomeMessage(){
 //		try {
 //			//Set the welcome message on screen
@@ -511,81 +513,81 @@ public class SdlService extends Service implements IProxyListenerALM{
 //		}
 //
 //	}
-	
-	/**
-	 *  Requests list of images to SDL, and uploads images that are missing.
-	 */
-	private void uploadImages(){
-		ListFiles listFiles = new ListFiles();
-		this.sendRpcRequest(listFiles);
-		
-	}
 
-	@Override
-	public void onListFilesResponse(ListFilesResponse response) {
-		Log.i(TAG, "onListFilesResponse from SDL ");
-		if(response.getSuccess()){
-			remoteFiles = response.getFilenames();
-		}
-		
-		// Check the mutable set for the AppIcon
-	    // If not present, upload the image
-		if(remoteFiles== null || !remoteFiles.contains(SdlService.ICON_FILENAME)){
-			try {
-				sendIcon();
-			} catch (SdlException e) {
-				e.printStackTrace();
-			}
-		}else{
-			// If the file is already present, send the SetAppIcon request
-			try {
-				proxy.setappicon(ICON_FILENAME, autoIncCorrId++);
-			} catch (SdlException e) {
-				e.printStackTrace();
-			}
-		}
-	}
+    /**
+     * Requests list of images to SDL, and uploads images that are missing.
+     */
+    private void uploadImages() {
+        ListFiles listFiles = new ListFiles();
+        this.sendRpcRequest(listFiles);
 
-	@Override
-	public void onPutFileResponse(PutFileResponse response) {
-		Log.i(TAG, "onPutFileResponse from SDL");
-		if(response.getCorrelationID().intValue() == iconCorrelationId){ //If we have successfully uploaded our icon, we want to set it
-			try {
-				proxy.setappicon(ICON_FILENAME, autoIncCorrId++);
-			} catch (SdlException e) {
-				e.printStackTrace();
-			}
-		}
+    }
 
-	}
-	
-	@Override
-	public void onOnLockScreenNotification(OnLockScreenStatus notification) {
-		if(!lockscreenDisplayed && notification.getShowLockScreen() == LockScreenStatus.REQUIRED){
-			// Show lock screen
-			Intent intent = new Intent(getApplicationContext(), LockScreenActivity.class);
-			intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY|Intent.FLAG_ACTIVITY_NEW_TASK);
+    @Override
+    public void onListFilesResponse(ListFilesResponse response) {
+        Log.i(TAG, "onListFilesResponse from SDL ");
+        if (response.getSuccess()) {
+            remoteFiles = response.getFilenames();
+        }
+
+        // Check the mutable set for the AppIcon
+        // If not present, upload the image
+        if (remoteFiles == null || !remoteFiles.contains(SdlService.ICON_FILENAME)) {
+            try {
+                sendIcon();
+            } catch (SdlException e) {
+                e.printStackTrace();
+            }
+        } else {
+            // If the file is already present, send the SetAppIcon request
+            try {
+                proxy.setappicon(ICON_FILENAME, autoIncCorrId++);
+            } catch (SdlException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void onPutFileResponse(PutFileResponse response) {
+        Log.i(TAG, "onPutFileResponse from SDL");
+        if (response.getCorrelationID().intValue() == iconCorrelationId) { //If we have successfully uploaded our icon, we want to set it
+            try {
+                proxy.setappicon(ICON_FILENAME, autoIncCorrId++);
+            } catch (SdlException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    @Override
+    public void onOnLockScreenNotification(OnLockScreenStatus notification) {
+        if (!lockscreenDisplayed && notification.getShowLockScreen() == LockScreenStatus.REQUIRED) {
+            // Show lock screen
+            Intent intent = new Intent(getApplicationContext(), LockScreenActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_TASK);
             lockscreenDisplayed = true;
-			startActivity(intent);
-		} else if(lockscreenDisplayed && notification.getShowLockScreen() != LockScreenStatus.REQUIRED){
-			// Clear lock screen
-			clearLockScreen();
-		}
-	}
+            startActivity(intent);
+        } else if (lockscreenDisplayed && notification.getShowLockScreen() != LockScreenStatus.REQUIRED) {
+            // Clear lock screen
+            clearLockScreen();
+        }
+    }
 
     private void clearLockScreen() {
         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY|Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         lockscreenDisplayed = false;
     }
 
-	@Override
-	public void onOnCommand(OnCommand notification){
+    @Override
+    public void onOnCommand(OnCommand notification) {
         Log.i(TAG, "onOnCommand: " + notification.getCmdID());
-		Integer id = notification.getCmdID();
-		if(id != null){
-			switch(id){
+        Integer id = notification.getCmdID();
+        if (id != null) {
+            switch (id) {
                 case 1: //PLAY
                     userWantsStreaming = true;
                     StreamingService.startPlaying(this, Radioseven);
@@ -593,28 +595,28 @@ public class SdlService extends Service implements IProxyListenerALM{
                 case 2: //STOP
                     userWantsStreaming = false;
                     StreamingService.stopPlaying(this);
-			}
-			//onAddCommandClicked(id);
-		}
-	}
+            }
+            //onAddCommandClicked(id);
+        }
+    }
 
-	/**
-	 *  Callback method that runs when the add command response is received from SDL.
-	 */
-	@Override
-	public void onAddCommandResponse(AddCommandResponse response) {
-		Log.i(TAG, "AddCommand response from SDL: " + response);
+    /**
+     * Callback method that runs when the add command response is received from SDL.
+     */
+    @Override
+    public void onAddCommandResponse(AddCommandResponse response) {
+        Log.i(TAG, "AddCommand response from SDL: " + response);
 
-	}
+    }
 
 	
 	/*  Vehicle Data   */
-	
-	
-	@Override
-	public void onOnPermissionsChange(OnPermissionsChange notification) {
-		Log.i(TAG, "Permision changed: " + notification);
-		/* Uncomment to subscribe to vehicle data
+
+
+    @Override
+    public void onOnPermissionsChange(OnPermissionsChange notification) {
+        Log.i(TAG, "Permision changed: " + notification);
+        /* Uncomment to subscribe to vehicle data
 		List<PermissionItem> permissions = notification.getPermissionItem();
 		for(PermissionItem permission:permissions){
 			if(permission.getRpcName().equalsIgnoreCase(FunctionID.SUBSCRIBE_VEHICLE_DATA.name())){
@@ -628,95 +630,95 @@ public class SdlService extends Service implements IProxyListenerALM{
 			}
 		}
 		*/
-	}
-		
-	@Override
-	public void onSubscribeVehicleDataResponse(SubscribeVehicleDataResponse response) {
-		if(response.getSuccess()){
-			Log.i(TAG, "Subscribed to vehicle data");
-		}
-	}
-	
-	@Override
-	public void onOnVehicleData(OnVehicleData notification) {
-		Log.i(TAG, "Vehicle data notification from SDL");
-		//TODO Put your vehicle data code here
-		//ie, notification.getSpeed().
+    }
 
-	}
-	
-	/**
-	 * Rest of the SDL callbacks from the head unit
-	 */
-	
-	@Override
-	public void onAddSubMenuResponse(AddSubMenuResponse response) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onSubscribeVehicleDataResponse(SubscribeVehicleDataResponse response) {
+        if (response.getSuccess()) {
+            Log.i(TAG, "Subscribed to vehicle data");
+        }
+    }
 
-	@Override
-	public void onCreateInteractionChoiceSetResponse(CreateInteractionChoiceSetResponse response) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onOnVehicleData(OnVehicleData notification) {
+        Log.i(TAG, "Vehicle data notification from SDL");
+        //TODO Put your vehicle data code here
+        //ie, notification.getSpeed().
 
-	@Override
-	public void onAlertResponse(AlertResponse response) {
-		// TODO Auto-generated method stub
-	}
+    }
 
-	@Override
-	public void onDeleteCommandResponse(DeleteCommandResponse response) {
-		// TODO Auto-generated method stub
-	}
+    /**
+     * Rest of the SDL callbacks from the head unit
+     */
 
-	@Override
-	public void onDeleteInteractionChoiceSetResponse(DeleteInteractionChoiceSetResponse response) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onAddSubMenuResponse(AddSubMenuResponse response) {
+        // TODO Auto-generated method stub
+    }
 
-	@Override
-	public void onDeleteSubMenuResponse(DeleteSubMenuResponse response) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onCreateInteractionChoiceSetResponse(CreateInteractionChoiceSetResponse response) {
+        // TODO Auto-generated method stub
+    }
 
-	@Override
-	public void onPerformInteractionResponse(PerformInteractionResponse response) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onAlertResponse(AlertResponse response) {
+        // TODO Auto-generated method stub
+    }
 
-	@Override
-	public void onResetGlobalPropertiesResponse(
-			ResetGlobalPropertiesResponse response) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onDeleteCommandResponse(DeleteCommandResponse response) {
+        // TODO Auto-generated method stub
+    }
 
-	@Override
-	public void onSetGlobalPropertiesResponse(SetGlobalPropertiesResponse response) {
-	}
+    @Override
+    public void onDeleteInteractionChoiceSetResponse(DeleteInteractionChoiceSetResponse response) {
+        // TODO Auto-generated method stub
+    }
 
-	@Override
-	public void onSetMediaClockTimerResponse(SetMediaClockTimerResponse response) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onDeleteSubMenuResponse(DeleteSubMenuResponse response) {
+        // TODO Auto-generated method stub
+    }
 
-	@Override
-	public void onShowResponse(ShowResponse response) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onPerformInteractionResponse(PerformInteractionResponse response) {
+        // TODO Auto-generated method stub
+    }
 
-	@Override
-	public void onSpeakResponse(SpeakResponse response) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onResetGlobalPropertiesResponse(
+            ResetGlobalPropertiesResponse response) {
+        // TODO Auto-generated method stub
+    }
 
-	@Override
-	public void onOnButtonEvent(OnButtonEvent notification) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onSetGlobalPropertiesResponse(SetGlobalPropertiesResponse response) {
+    }
 
-	@Override
-	public void onOnButtonPress(OnButtonPress notification) {
-		Log.i(TAG, "onOnButtonPress: " + notification.getButtonName());
+    @Override
+    public void onSetMediaClockTimerResponse(SetMediaClockTimerResponse response) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void onShowResponse(ShowResponse response) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void onSpeakResponse(SpeakResponse response) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void onOnButtonEvent(OnButtonEvent notification) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void onOnButtonPress(OnButtonPress notification) {
+        Log.i(TAG, "onOnButtonPress: " + notification.getButtonName());
 
         if (notification.getButtonName().equals(ButtonName.OK)) {
             if (StreamingService.isStreaming) {
@@ -725,220 +727,220 @@ public class SdlService extends Service implements IProxyListenerALM{
                 StreamingService.startPlaying(this, Radioseven);
             }
         }
-	}
+    }
 
-	@Override
-	public void onSubscribeButtonResponse(SubscribeButtonResponse response) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onSubscribeButtonResponse(SubscribeButtonResponse response) {
+        // TODO Auto-generated method stub
+    }
 
-	@Override
-	public void onUnsubscribeButtonResponse(UnsubscribeButtonResponse response) {
-		// TODO Auto-generated method stub	
-	}
+    @Override
+    public void onUnsubscribeButtonResponse(UnsubscribeButtonResponse response) {
+        // TODO Auto-generated method stub
+    }
 
 
-	@Override
-	public void onOnTBTClientState(OnTBTClientState notification) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onOnTBTClientState(OnTBTClientState notification) {
+        // TODO Auto-generated method stub
+    }
 
-	@Override
-	public void onUnsubscribeVehicleDataResponse(
-			UnsubscribeVehicleDataResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onUnsubscribeVehicleDataResponse(
+            UnsubscribeVehicleDataResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onGetVehicleDataResponse(GetVehicleDataResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onGetVehicleDataResponse(GetVehicleDataResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onReadDIDResponse(ReadDIDResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onReadDIDResponse(ReadDIDResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onGetDTCsResponse(GetDTCsResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onGetDTCsResponse(GetDTCsResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
 
-	@Override
-	public void onPerformAudioPassThruResponse(PerformAudioPassThruResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onPerformAudioPassThruResponse(PerformAudioPassThruResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onEndAudioPassThruResponse(EndAudioPassThruResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onEndAudioPassThruResponse(EndAudioPassThruResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onOnAudioPassThru(OnAudioPassThru notification) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onOnAudioPassThru(OnAudioPassThru notification) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onDeleteFileResponse(DeleteFileResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onDeleteFileResponse(DeleteFileResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onSetAppIconResponse(SetAppIconResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onSetAppIconResponse(SetAppIconResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onScrollableMessageResponse(ScrollableMessageResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onScrollableMessageResponse(ScrollableMessageResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onChangeRegistrationResponse(ChangeRegistrationResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onChangeRegistrationResponse(ChangeRegistrationResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onSetDisplayLayoutResponse(SetDisplayLayoutResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onSetDisplayLayoutResponse(SetDisplayLayoutResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onOnLanguageChange(OnLanguageChange notification) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onOnLanguageChange(OnLanguageChange notification) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onSliderResponse(SliderResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onSliderResponse(SliderResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
 
-	@Override
-	public void onOnHashChange(OnHashChange notification) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onOnHashChange(OnHashChange notification) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onOnSystemRequest(OnSystemRequest notification) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onOnSystemRequest(OnSystemRequest notification) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onSystemRequestResponse(SystemRequestResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onSystemRequestResponse(SystemRequestResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onOnKeyboardInput(OnKeyboardInput notification) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onOnKeyboardInput(OnKeyboardInput notification) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onOnTouchEvent(OnTouchEvent notification) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onOnTouchEvent(OnTouchEvent notification) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onDiagnosticMessageResponse(DiagnosticMessageResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onDiagnosticMessageResponse(DiagnosticMessageResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onOnStreamRPC(OnStreamRPC notification) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onOnStreamRPC(OnStreamRPC notification) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onStreamRPCResponse(StreamRPCResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onStreamRPCResponse(StreamRPCResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onDialNumberResponse(DialNumberResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onDialNumberResponse(DialNumberResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onSendLocationResponse(SendLocationResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onSendLocationResponse(SendLocationResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onServiceEnded(OnServiceEnded serviceEnded) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onServiceEnded(OnServiceEnded serviceEnded) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onServiceNACKed(OnServiceNACKed serviceNACKed) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onServiceNACKed(OnServiceNACKed serviceNACKed) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onShowConstantTbtResponse(ShowConstantTbtResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onShowConstantTbtResponse(ShowConstantTbtResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onAlertManeuverResponse(AlertManeuverResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onAlertManeuverResponse(AlertManeuverResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onUpdateTurnListResponse(UpdateTurnListResponse response) {
-		// TODO Auto-generated method stub
+    @Override
+    public void onUpdateTurnListResponse(UpdateTurnListResponse response) {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public void onServiceDataACK() {
-		// TODO Auto-generated method stub
+    @Override
+    public void onServiceDataACK() {
+        // TODO Auto-generated method stub
 
-	}
-	
-	@Override
-	public void onOnDriverDistraction(OnDriverDistraction notification) {
-		// Some RPCs (depending on region) cannot be sent when driver distraction is active.
-	}
+    }
 
-	@Override
-	public void onError(String info, Exception e) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onOnDriverDistraction(OnDriverDistraction notification) {
+        // Some RPCs (depending on region) cannot be sent when driver distraction is active.
+    }
 
-	@Override
-	public void onGenericResponse(GenericResponse response) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onError(String info, Exception e) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void onGenericResponse(GenericResponse response) {
+        // TODO Auto-generated method stub
+    }
 
 }
