@@ -356,7 +356,16 @@ public class SdlService extends Service implements IProxyListenerALM{
 	}
 
 
-
+	private void addCommand(String name, int cmdID) {
+		AddCommand command;
+		MenuParams params = new MenuParams();
+		params.setMenuName(name);
+		command = new AddCommand();
+		command.setCmdID(cmdID);
+		command.setMenuParams(params);
+		command.setVrCommands(Arrays.asList(new String[]{name}));
+		sendRpcRequest(command);
+	}
 
 	@Override
 	public void onOnHMIStatus(OnHMIStatus notification) {
@@ -380,22 +389,9 @@ public class SdlService extends Service implements IProxyListenerALM{
 
 			//uploadImages();
 			firstNonHmiNone = false;
-			AddCommand command = new AddCommand();
-			MenuParams params = new MenuParams();
-			params.setMenuName("Play");
-			command = new AddCommand();
-			command.setCmdID(1);
-			command.setMenuParams(params);
-			command.setVrCommands(Arrays.asList(new String[]{"Play"}));
-			sendRpcRequest(command);
-			command = new AddCommand();
-			params = new MenuParams();
-			params.setMenuName("Pause");
-			command = new AddCommand();
-			command.setCmdID(2);
-			command.setMenuParams(params);
-			command.setVrCommands(Arrays.asList(new String[]{"Pause"}));
-			sendRpcRequest(command);
+			addCommand("Play", 1);
+			addCommand("Pause", 2);
+			addCommand("Genres", 3);
 
 			Single.fromCallable(new Callable<List<Genre>>() {
 				@Override
