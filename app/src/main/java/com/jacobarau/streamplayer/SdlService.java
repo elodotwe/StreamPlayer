@@ -94,7 +94,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.Callable;
 
 import rx.Single;
@@ -129,6 +128,7 @@ public class SdlService extends Service implements IProxyListenerALM {
 
     private boolean firstNonHmiNone = true;
 
+    private List<Integer> pendingInteractions = new LinkedList<>();
 
     //Represents the choice set for refinement of a given genre
     //(for instance, genre = "Decades" and children would include
@@ -419,6 +419,8 @@ public class SdlService extends Service implements IProxyListenerALM {
                     GenreTreeConversionResult result = convertGenreList(genres);
                     for (CreateInteractionChoiceSet cs : result.choiceSets) {
                         SdlService.this.sendRpcRequest(cs);
+                        //TODO: this is half-assed and you know it.
+                        pendingInteractions.add(autoIncCorrId - 1);
                     }
                 }
             });
@@ -658,7 +660,9 @@ public class SdlService extends Service implements IProxyListenerALM {
 
     @Override
     public void onCreateInteractionChoiceSetResponse(CreateInteractionChoiceSetResponse response) {
-        // TODO Auto-generated method stub
+        //TODO: assumes well-behaved module
+        pendingInteractions.remove(response.getCorrelationID());
+        Log.d(TAG, "Got response to " + response.getCorrelationID() + ", " + pendingInteractions.size() + " pending interactions left");
     }
 
     @Override
