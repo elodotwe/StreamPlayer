@@ -90,8 +90,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 
@@ -134,18 +136,20 @@ public class SdlService extends Service implements IProxyListenerALM{
 	public class GenreNode {
 		Genre genre;
 		//Index in this List is the choice ID to SYNC.
-		List<GenreNode> children;
+		Map<Integer, GenreNode> children;
 		//This will be null if there are no children.
 		//This is the ID for the choice set containing this genre's children.
 		Integer choiceSetID;
 	}
 
 	public class GenreTreeConversionResult {
-		List<GenreNode> topLevel;
+		Map<Integer, GenreNode> topLevel;
 		//These get passed out like this just so that we don't have to recurse through the tree again.
 		//We will recurse through the tree as the user interacts later, but we want to fire all these
 		//at SYNC during initialization...
 		List<CreateInteractionChoiceSet> choiceSets;
+		//Used only during building of the data structure--number of contained Choices in structure.
+		int choiceCount;
 	}
 
 	@Override
@@ -442,41 +446,50 @@ public class SdlService extends Service implements IProxyListenerALM{
 	}
 
 	public GenreTreeConversionResult convertGenreList(List<Genre> genres) {
-		return convertGenreList(genres, 0);
+		return convertGenreList(genres, 0, 0);
 	}
 
-	private GenreTreeConversionResult convertGenreList(List<Genre> genres, int startID) {
+	private GenreTreeConversionResult convertGenreList(List<Genre> genres, int startInteractionID, int startChoiceID) {
 		GenreTreeConversionResult result = new GenreTreeConversionResult();
 		result.choiceSets = new ArrayList<>();
-		result.topLevel = new ArrayList<>();
+		result.topLevel = new HashMap<>();
 
 		CreateInteractionChoiceSet topSet = new CreateInteractionChoiceSet();
-		topSet.setInteractionChoiceSetID(startID++);
+		topSet.setInteractionChoiceSetID(startInteractionID++);
 		List<Choice> topSetChoices = new ArrayList<>();
 		result.choiceSets.add(topSet);
+		result.choiceCount = 0;
 
 		for (int genre = 0; genre < genres.size(); genre++) {
 			GenreNode n = new GenreNode();
 			Genre g = genres.get(genre);
 			n.genre = g;
-			n.children = new ArrayList<>();
+			n.children = new HashMap<>();
 
 			Choice c = new Choice();
 			c.setMenuName(g.getName());
-			//Choice IDs are not global--they can be reused as they only pertain to the
-			//choice set in front of the user at the moment.
-			//Setting this to the genre index lets us look at the genre node list later.
-			c.setChoiceID(genre);
+			//Choice IDs are global and must not collide.
+			//We pass startChoiceID into any recursive calls and increment it by the number of
+			//choices returned in order to keep from colliding.
+			c.setChoiceID(startChoiceID++);
+
+			result.choiceCount++;
+
+			ArrayList<String> vrCommands = new ArrayList<>();
+			vrCommands.add(g.getName());
+			c.setVrCommands(vrCommands);
 			topSetChoices.add(c);
 
 			if (g.getChildren().size() > 0) {
-				GenreTreeConversionResult children = convertGenreList(g.getChildren(), startID);
-				startID += children.choiceSets.size();
+				GenreTreeConversionResult children = convertGenreList(g.getChildren(), startInteractionID, startChoiceID);
+				startInteractionID += children.choiceSets.size();
+				startChoiceID += children.choiceCount;
+				result.choiceCount += children.choiceCount;
 				result.choiceSets.addAll(children.choiceSets);
-				n.children.addAll(children.topLevel);
+				n.children.putAll(result.topLevel);
 			}
 
-			result.topLevel.add(n);
+			result.topLevel.put(c.getChoiceID(), n);
 		}
 		topSet.setChoiceSet(topSetChoices);
 		return result;
