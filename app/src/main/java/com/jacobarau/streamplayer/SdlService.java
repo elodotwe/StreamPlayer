@@ -260,13 +260,15 @@ public class SdlService extends Service implements IProxyListenerALM {
      *
      * @param request Request to be sent; correlation ID will be replaced.
      */
-    private void sendRpcRequest(RPCRequest request) {
+    private int sendRpcRequest(RPCRequest request) {
         request.setCorrelationID(autoIncCorrId++);
         try {
             proxy.sendRPCRequest(request);
         } catch (SdlException e) {
             e.printStackTrace();
         }
+
+        return request.getCorrelationID();
     }
 
     /**
@@ -407,9 +409,8 @@ public class SdlService extends Service implements IProxyListenerALM {
                 public void onNext(List<Genre> genres) {
                     GenreTreeConversionResult result = convertGenreList(genres);
                     for (CreateInteractionChoiceSet cs : result.choiceSets) {
-                        SdlService.this.sendRpcRequest(cs);
-                        //TODO: this is half-assed and you know it.
-                        pendingInteractions.add(autoIncCorrId - 1);
+                        int correlationID = SdlService.this.sendRpcRequest(cs);
+                        pendingInteractions.add(correlationID);
                     }
                 }
             });
