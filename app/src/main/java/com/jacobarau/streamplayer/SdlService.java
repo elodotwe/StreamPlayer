@@ -4,6 +4,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 import android.util.Log;
+import android.util.SparseArray;
 
 import com.jacobarau.shoutcast.DirectoryClient;
 import com.jacobarau.shoutcast.Genre;
@@ -89,11 +90,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 import rx.Single;
@@ -137,13 +136,13 @@ public class SdlService extends Service implements IProxyListenerALM {
         Genre genre;
         //Integer key is the Choice ID that would need to be selected in the parent's ChoiceSet in order
         //to reach that GenreNode.
-        Map<Integer, GenreNode> children;
+        SparseArray<GenreNode> children;
         //Choice set ID to present all children in PerformInteraction to user (null if this is a leaf)
         Integer choiceSetID;
     }
 
     public class GenreTreeConversionResult {
-        Map<Integer, GenreNode> topLevel;
+        SparseArray<GenreNode> topLevel;
         int topLevelChoiceSetID;
 
         //These get passed out like this just so that we don't have to recurse through the tree again.
@@ -163,7 +162,7 @@ public class SdlService extends Service implements IProxyListenerALM {
     public void onCreate() {
         super.onCreate();
         instance = this;
-        remoteFiles = new ArrayList<String>();
+        remoteFiles = new ArrayList<>();
 
         Log.d(TAG, "oncreate happened");
     }
@@ -192,10 +191,6 @@ public class SdlService extends Service implements IProxyListenerALM {
 
     public static SdlService getInstance() {
         return instance;
-    }
-
-    public SdlProxyALM getProxy() {
-        return proxy;
     }
 
     public void startProxy() {
@@ -263,7 +258,7 @@ public class SdlService extends Service implements IProxyListenerALM {
     /**
      * Sends an RPC Request to the connected head unit. Automatically adds a correlation id.
      *
-     * @param request
+     * @param request Request to be sent; correlation ID will be replaced.
      */
     private void sendRpcRequest(RPCRequest request) {
         request.setCorrelationID(autoIncCorrId++);
@@ -308,12 +303,6 @@ public class SdlService extends Service implements IProxyListenerALM {
         }
     }
 
-    /**
-     * Helper method to take resource files and turn them into byte arrays
-     *
-     * @param resource
-     * @return
-     */
     private byte[] contentsOfResource(int resource) {
         InputStream is = null;
         try {
@@ -321,7 +310,7 @@ public class SdlService extends Service implements IProxyListenerALM {
             ByteArrayOutputStream os = new ByteArrayOutputStream(is.available());
             final int buffersize = 4096;
             final byte[] buffer = new byte[buffersize];
-            int available = 0;
+            int available;
             while ((available = is.read(buffer)) >= 0) {
                 os.write(buffer, 0, available);
             }
@@ -367,7 +356,7 @@ public class SdlService extends Service implements IProxyListenerALM {
         command = new AddCommand();
         command.setCmdID(cmdID);
         command.setMenuParams(params);
-        command.setVrCommands(Arrays.asList(new String[]{name}));
+        command.setVrCommands(Collections.singletonList(name));
         sendRpcRequest(command);
     }
 
@@ -451,10 +440,16 @@ public class SdlService extends Service implements IProxyListenerALM {
         return convertGenreList(genres, 0, 0);
     }
 
+    private void combineSparseArrays(SparseArray<GenreNode> into, SparseArray<GenreNode> from) {
+        for (int i = 0; i < from.size(); i++) {
+            into.append(from.keyAt(i), from.valueAt(i));
+        }
+    }
+
     private GenreTreeConversionResult convertGenreList(List<Genre> genres, int startInteractionID, int startChoiceID) {
         GenreTreeConversionResult result = new GenreTreeConversionResult();
         result.choiceSets = new ArrayList<>();
-        result.topLevel = new HashMap<>();
+        result.topLevel = new SparseArray<>();
 
         CreateInteractionChoiceSet topSet = new CreateInteractionChoiceSet();
         topSet.setInteractionChoiceSetID(startInteractionID++);
@@ -467,7 +462,7 @@ public class SdlService extends Service implements IProxyListenerALM {
             GenreNode n = new GenreNode();
             Genre g = genres.get(genre);
             n.genre = g;
-            n.children = new HashMap<>();
+            n.children = new SparseArray<>();
 
             Choice c = new Choice();
             c.setMenuName(g.getName());
@@ -489,7 +484,7 @@ public class SdlService extends Service implements IProxyListenerALM {
                 startChoiceID += children.choiceCount;
                 result.choiceCount += children.choiceCount;
                 result.choiceSets.addAll(children.choiceSets);
-                n.children.putAll(result.topLevel);
+                combineSparseArrays(n.children, result.topLevel);
                 n.choiceSetID = children.topLevelChoiceSetID;
             }
 
@@ -553,7 +548,7 @@ public class SdlService extends Service implements IProxyListenerALM {
     @Override
     public void onPutFileResponse(PutFileResponse response) {
         Log.i(TAG, "onPutFileResponse from SDL");
-        if (response.getCorrelationID().intValue() == iconCorrelationId) { //If we have successfully uploaded our icon, we want to set it
+        if (response.getCorrelationID() == iconCorrelationId) { //If we have successfully uploaded our icon, we want to set it
             try {
                 proxy.setappicon(ICON_FILENAME, autoIncCorrId++);
             } catch (SdlException e) {
