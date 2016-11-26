@@ -100,7 +100,7 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
      * Returns a new DataSource factory.
      *
      * @param useBandwidthMeter Whether to set {@link #BANDWIDTH_METER} as a listener to the new
-     *     DataSource factory.
+     *                          DataSource factory.
      * @return A new DataSource factory.
      */
     private DataSource.Factory buildDataSourceFactory(boolean useBandwidthMeter) {
@@ -112,7 +112,7 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
      * Returns a new HttpDataSource factory.
      *
      * @param useBandwidthMeter Whether to set {@link #BANDWIDTH_METER} as a listener to the new
-     *     DataSource factory.
+     *                          DataSource factory.
      * @return A new HttpDataSource factory.
      */
     private HttpDataSource.Factory buildHttpDataSourceFactory(boolean useBandwidthMeter) {
@@ -246,9 +246,9 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
 
         final ScheduledExecutorService exec = Executors.newScheduledThreadPool(1);
         this.cntr = counters;
-        exec.schedule(new Runnable(){
+        exec.schedule(new Runnable() {
             @Override
-            public void run(){
+            public void run() {
                 Log.i(TAG, "Player " + decoderCountToString(cntr));
                 if (audioEnabled) {
                     exec.schedule(this, 1, TimeUnit.SECONDS);

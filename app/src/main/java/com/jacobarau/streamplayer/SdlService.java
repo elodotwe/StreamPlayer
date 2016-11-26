@@ -617,7 +617,7 @@ public class SdlService extends Service implements IProxyListenerALM {
     public void onOnPermissionsChange(OnPermissionsChange notification) {
         Log.i(TAG, "Permision changed: " + notification);
         /* Uncomment to subscribe to vehicle data
-		List<PermissionItem> permissions = notification.getPermissionItem();
+        List<PermissionItem> permissions = notification.getPermissionItem();
 		for(PermissionItem permission:permissions){
 			if(permission.getRpcName().equalsIgnoreCase(FunctionID.SUBSCRIBE_VEHICLE_DATA.name())){
 				if(permission.getHMIPermissions().getAllowed()!=null && permission.getHMIPermissions().getAllowed().size()>0){

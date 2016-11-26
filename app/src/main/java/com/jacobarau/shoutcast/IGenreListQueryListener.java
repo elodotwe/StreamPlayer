@@ -5,5 +5,6 @@ package com.jacobarau.shoutcast;
  */
 public interface IGenreListQueryListener {
     public void onError();
+
     public void onResultReturned(Genre genres[]);
 }

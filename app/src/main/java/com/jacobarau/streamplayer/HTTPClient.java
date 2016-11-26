@@ -30,7 +30,7 @@ public class HTTPClient implements IHTTPClient {
                     ArrayList<Byte> responseList = new ArrayList<>();
                     int b = response.read();
                     while (b != -1) {
-                        responseList.add((byte)b);
+                        responseList.add((byte) b);
                         b = response.read();
                     }
                     byte[] respBytes = new byte[responseList.size()];

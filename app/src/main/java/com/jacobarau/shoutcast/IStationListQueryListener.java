@@ -5,5 +5,6 @@ package com.jacobarau.shoutcast;
  */
 public interface IStationListQueryListener {
     public void onError();
+
     public void onResultReturned(Station stations[]);
 }

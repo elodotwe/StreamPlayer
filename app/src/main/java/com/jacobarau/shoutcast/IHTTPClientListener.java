@@ -5,5 +5,6 @@ package com.jacobarau.shoutcast;
  */
 public interface IHTTPClientListener {
     void onError(String message);
+
     void onResult(String resultBody);
 }
