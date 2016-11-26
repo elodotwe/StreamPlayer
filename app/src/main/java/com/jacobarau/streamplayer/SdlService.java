@@ -135,15 +135,17 @@ public class SdlService extends Service implements IProxyListenerALM{
 	//"20s", "30s", "40s"...etc)
 	public class GenreNode {
 		Genre genre;
-		//Index in this List is the choice ID to SYNC.
+		//Integer key is the Choice ID that would need to be selected in the parent's ChoiceSet in order
+        //to reach that GenreNode.
 		Map<Integer, GenreNode> children;
-		//This will be null if there are no children.
-		//This is the ID for the choice set containing this genre's children.
-		Integer choiceSetID;
+        //Choice set ID to present all children in PerformInteraction to user (null if this is a leaf)
+        Integer choiceSetID;
 	}
 
 	public class GenreTreeConversionResult {
 		Map<Integer, GenreNode> topLevel;
+        int topLevelChoiceSetID;
+
 		//These get passed out like this just so that we don't have to recurse through the tree again.
 		//We will recurse through the tree as the user interacts later, but we want to fire all these
 		//at SYNC during initialization...
@@ -452,6 +454,7 @@ public class SdlService extends Service implements IProxyListenerALM{
 
 		CreateInteractionChoiceSet topSet = new CreateInteractionChoiceSet();
 		topSet.setInteractionChoiceSetID(startInteractionID++);
+        result.topLevelChoiceSetID = topSet.getInteractionChoiceSetID();
 		List<Choice> topSetChoices = new ArrayList<>();
 		result.choiceSets.add(topSet);
 		result.choiceCount = 0;
@@ -483,6 +486,7 @@ public class SdlService extends Service implements IProxyListenerALM{
 				result.choiceCount += children.choiceCount;
 				result.choiceSets.addAll(children.choiceSets);
 				n.children.putAll(result.topLevel);
+                n.choiceSetID = children.topLevelChoiceSetID;
 			}
 
 			result.topLevel.put(c.getChoiceID(), n);
