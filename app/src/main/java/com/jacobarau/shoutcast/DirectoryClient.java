@@ -93,10 +93,14 @@ public class DirectoryClient {
     }
 
     /**
-     * Start an asynchronous query to get a set of genres.
+     * Start a synchronous (blocking!) query to get the complete tree of Genres.
+     *
+     * The List returned contains all top-level Genres. Calling its getChildren() function will
+     * return its list of children; if this is empty, the Genre has no children.
      */
     public List<Genre> queryGenres() throws Exception {
         String url;
+        //TODO: build URI properly
         url = "http://api.shoutcast.com/genre/secondary?parentid=" + 0 + "&k=" + DEVELOPER_KEY + "&f=json";
         URL req = new URL(url);
         URLConnection conn = req.openConnection();
@@ -146,7 +150,6 @@ public class DirectoryClient {
             node = nodes.poll();
         }
 
-        Genre[] ret = new Genre[rootGenre.getChildren().size()];
         return rootGenre.getChildren();
     }
 }
