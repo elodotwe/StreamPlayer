@@ -11,8 +11,9 @@ public class Station {
     private String genre;
     private String nowPlaying;
     private int listeners;
+    private int maxListeners;
 
-    public Station(String name, String mediaType, int id, int bitrate, String genre, String currentTrack, int listeners) {
+    public Station(String name, String mediaType, int id, int bitrate, String genre, String currentTrack, int listeners, int maxListeners) {
         this.name = name;
         this.mediaType = mediaType;
         this.id = id;
@@ -20,6 +21,7 @@ public class Station {
         this.genre = genre;
         this.nowPlaying = currentTrack;
         this.listeners = listeners;
+        this.maxListeners = maxListeners;
     }
 
     public String getName() {
@@ -48,5 +50,9 @@ public class Station {
 
     public int getListeners() {
         return listeners;
+    }
+
+    public int getMaxListeners() {
+        return maxListeners;
     }
 }

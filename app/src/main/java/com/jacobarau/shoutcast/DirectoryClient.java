@@ -1,95 +1,114 @@
 package com.jacobarau.shoutcast;
 
-import android.content.Context;
-import android.text.Html;
 import android.util.Log;
-
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
 
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.lang.reflect.Array;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
-/**
- * Created by jacob on 10/14/16.
- */
-
 public class DirectoryClient {
     private static final String TAG = "DirectoryClient";
 
-    final String DEVELOPER_KEY = "***REMOVED***";
+    //===========================================
+    //WHY AM I MISSING THIS "DeveloperKey" CLASS?
+    //===========================================
+    //To develop on this project, you need a developer key for the SHOUTcast API.
+    //Go request one at https://www.shoutcast.com/Developer.
+    //Once you've received it, create a class called DeveloperKey like so:
+    /*
+    package com.jacobarau.shoutcast;
 
-    /**
-     * Start an asynchronous query to get stations playing a track matching the given nowPlaying
-     * string (e.g. find stations playing Weird Al).
-     *
-     * @param listener   object to notify once an error or valid results are available
-     * @param nowPlaying Required to be not null; the keyword(s) to search within nowPlaying fields
-     *                   of stations; can be artist, song name, or whatever a station might put in
-     *                   that field.
-     * @param genre      If not null, result set will contain only this genre
-     * @param limit      If not null, result set will contain only this many stations
-     * @param pageNumber If not null, limit must not be null as well. Result set will be "limit"
-     *                   Stations long, and will be the "pageNumber"th block of "limit" stations.
-     *                   Allows for pagination.
-     * @param bitrate    If not null, result set will contain stations with only this bitrate
-     * @param mediaType  If not null, result set will contain stations with only this media type
-     */
-    public void queryStationsByNowPlaying(IStationListQueryListener listener, String nowPlaying, String genre, Integer limit, Integer pageNumber, Integer bitrate, String mediaType) {
-
+    public final class DeveloperKey {
+        public static final String DEVELOPER_KEY = "{your_developer_key}";
     }
+    */
+    //This key is trivially extracted from existing SHOUTcast binaries, but if you are savvy enough
+    //to know how to do this, you are probably also smart enough to know why you shouldn't.
 
     /**
-     * Start an asynchronous query to get stations matching any single parameter or a combination
-     * of parameters.
+     * Query stations matching any single parameter or a combination of parameters.
+     * Blocks until success or failure of retrieval.
      *
-     * @param listener  object to notify once an error or valid results are available
      * @param keywords  If not null, the keyword(s) to search for
      * @param genre     If not null, the genre (gotten from the genre API) to filter by
      * @param limit     If not null, result set will contain only this many stations
      * @param bitrate   If not null, result set will contain stations with only this bitrate
      * @param mediaType If not null, result set will contain stations with only this media type
      */
-    public void queryStations(IStationListQueryListener listener, String keywords, Genre genre, Integer limit, Integer bitrate, String mediaType) {
+    public List<Station> queryStations(String keywords, Genre genre, Integer limit, Integer bitrate, String mediaType) throws Exception {
+        String url;
+        //TODO: build URI properly
+        boolean notAllNull = false;
+        //NOTE: Error on the line below? See note at top of this class!
+        url = "http://api.shoutcast.com/station/advancedsearch?k=" + DeveloperKey.DEVELOPER_KEY;
+        url += "&f=json";
+        if (keywords != null) {
+            url += "&search=" + keywords;
+            notAllNull = true;
+        }
+        if (genre != null) {
+            url += "&genre_id=" + genre.getId();
+            notAllNull = true;
+        }
+        if (limit != null) {
+            url += "&limit=" + limit;
+            notAllNull = true;
+        }
+        if (bitrate != null) {
+            url += "&br=" + bitrate;
+            notAllNull = true;
+        }
+        if (mediaType != null) {
+            url += "&mt=" + mediaType;
+            notAllNull = true;
+        }
+        if (notAllNull) {
+            throw new IllegalArgumentException("At least one parameter must be non-null");
+        }
 
-    }
+        URL req = new URL(url);
+        JSONObject response = getJSON(req);
+        Log.i(TAG, "onResponse; got JSONObject " + response.toString(4));
+        if (response.getJSONObject("response").getInt("statusCode") != 200) {
+            Log.e(TAG, "response.statusCode != 200 trying to get genre list");
+            throw new Exception("response.statusCode not 200");
+        }
 
-    /**
-     * Start an asynchronous query to get random stations(s).
-     *
-     * @param listener  object to notify once an error or valid results are available
-     * @param genre     If not null, a genre to limit to
-     * @param limit     If not null, result set will contain only this many stations
-     * @param bitrate   If not null, result set will contain stations with only this bitrate
-     * @param mediaType If not null, result set will contain stations with only this media type
-     */
-    public void queryRandomStations(IStationListQueryListener listener, Genre genre, Integer limit, Integer bitrate, String mediaType) {
+        JSONArray stations = response.getJSONObject("response").getJSONObject("data").getJSONObject("stationList").getJSONArray("station");
+        LinkedList<Station> ret = new LinkedList<>();
+        for (int i = 0; i < stations.length(); i++) {
+            JSONObject station = stations.getJSONObject(i);
+            int id = station.getInt("id");
+            String genreStr = station.getString("genre");
+            String mediaTypeStr = station.getString("mt");
+            String nameStr = station.getString("name");
+            int listenerCount = station.getInt("lc");
+            int maxListeners = station.getInt("ml");
+            int bitRate = station.getInt("br");
+            String currentTrack = station.getString("ct");
+            Station st = new Station(nameStr, mediaTypeStr, id, bitRate, genreStr, currentTrack, listenerCount, maxListeners);
+            ret.add(st);
+        }
 
+        return ret;
     }
 
     private String convertStreamToString(java.io.InputStream is) {
         java.util.Scanner s = new java.util.Scanner(is, "UTF-8").useDelimiter("\\A");
         return s.hasNext() ? s.next() : "";
+    }
+
+    private JSONObject getJSON(URL url) throws Exception {
+        URLConnection conn = url.openConnection();
+        String responseStr = convertStreamToString(conn.getInputStream());
+        JSONObject response = new JSONObject(responseStr);
+        return response;
     }
 
     /**
@@ -101,11 +120,9 @@ public class DirectoryClient {
     public List<Genre> queryGenres() throws Exception {
         String url;
         //TODO: build URI properly
-        url = "http://api.shoutcast.com/genre/secondary?parentid=" + 0 + "&k=" + DEVELOPER_KEY + "&f=json";
+        url = "http://api.shoutcast.com/genre/secondary?parentid=" + 0 + "&k=" + DeveloperKey.DEVELOPER_KEY + "&f=json";
         URL req = new URL(url);
-        URLConnection conn = req.openConnection();
-        String responseStr = convertStreamToString(conn.getInputStream());
-        JSONObject response = new JSONObject(responseStr);
+        JSONObject response = getJSON(req);
         Log.i(TAG, "onResponse; got JSONObject " + response.toString(4));
         if (response.getJSONObject("response").getInt("statusCode") != 200) {
             Log.e(TAG, "response.statusCode != 200 trying to get genre list");
