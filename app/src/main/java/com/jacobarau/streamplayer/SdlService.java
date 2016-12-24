@@ -54,6 +54,7 @@ import com.smartdevicelink.proxy.rpc.OnTBTClientState;
 import com.smartdevicelink.proxy.rpc.OnTouchEvent;
 import com.smartdevicelink.proxy.rpc.OnVehicleData;
 import com.smartdevicelink.proxy.rpc.PerformAudioPassThruResponse;
+import com.smartdevicelink.proxy.rpc.PerformInteraction;
 import com.smartdevicelink.proxy.rpc.PerformInteractionResponse;
 import com.smartdevicelink.proxy.rpc.PutFile;
 import com.smartdevicelink.proxy.rpc.PutFileResponse;
@@ -129,6 +130,10 @@ public class SdlService extends Service implements IProxyListenerALM {
 
     private List<Integer> pendingInteractions = new LinkedList<>();
 
+    private final int CMDID_PLAY = 1;
+    private final int CMDID_PAUSE = 2;
+    private final int CMDID_GENRES = 3;
+
     //Represents the choice set for refinement of a given genre
     //(for instance, genre = "Decades" and children would include
     //"20s", "30s", "40s"...etc)
@@ -152,6 +157,8 @@ public class SdlService extends Service implements IProxyListenerALM {
         //Used only during building of the data structure--number of contained Choices in structure.
         int choiceCount;
     }
+
+    GenreTreeConversionResult genreTree = null;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -196,8 +203,8 @@ public class SdlService extends Service implements IProxyListenerALM {
     public void startProxy() {
         if (proxy == null) {
             try {
-                BaseTransportConfig xprt = new TCPTransportConfig(12345, "19.76.6.234", true); //.11 is VM, .6 is ALE
-                proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID);//, xprt);
+                BaseTransportConfig xprt = new TCPTransportConfig(12345, "192.168.1.72", true); //.11 is VM, .6 is ALE
+                proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID, xprt);
 
             } catch (SdlException e) {
                 e.printStackTrace();
@@ -384,9 +391,9 @@ public class SdlService extends Service implements IProxyListenerALM {
 
             //uploadImages();
             firstNonHmiNone = false;
-            addCommand("Play", 1);
-            addCommand("Pause", 2);
-            addCommand("Genres", 3);
+            addCommand("Play", CMDID_PLAY);
+            addCommand("Pause", CMDID_PAUSE);
+            addCommand("Genres", CMDID_GENRES);
 
             Single.fromCallable(new Callable<List<Genre>>() {
                 @Override
@@ -412,6 +419,7 @@ public class SdlService extends Service implements IProxyListenerALM {
                         int correlationID = SdlService.this.sendRpcRequest(cs);
                         pendingInteractions.add(correlationID);
                     }
+                    genreTree = result;
                 }
             });
 
@@ -586,13 +594,20 @@ public class SdlService extends Service implements IProxyListenerALM {
         Integer id = notification.getCmdID();
         if (id != null) {
             switch (id) {
-                case 1: //PLAY
+                case CMDID_PLAY:
                     userWantsStreaming = true;
                     StreamingService.startPlaying(this, Radioseven);
                     break;
-                case 2: //STOP
+                case CMDID_PAUSE:
                     userWantsStreaming = false;
                     StreamingService.stopPlaying(this);
+                    break;
+                case CMDID_GENRES:
+                    if (pendingInteractions.size() == 0) {
+                        PerformInteraction pi = new PerformInteraction();
+                        pi.setInitialText("Choose a genre");
+//                        pi.setInteractionChoiceSetIDList();
+                    }
             }
             //onAddCommandClicked(id);
         }
