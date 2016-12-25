@@ -82,7 +82,78 @@ public class DirectoryClientTest {
 
     @Test
     public void queryGenres() throws Exception {
+        String url = "http://api.shoutcast.com/genre/secondary?parentid=" + 0 + "&k=" + DeveloperKey.DEVELOPER_KEY + "&f=json";
+        when(mockedClient.fetchURL(any(URL.class))).thenReturn("{\"response\":{\"statusCode\":200,\"data\":{\"genrelist\":{\"genre\":[{\"genrelist\":{\"genre\":[{\"id\":2,\"haschildren\":false,\"count\":94,\"name\":\"Adult Alternative\",\"parentid\":1},{\"id\":3,\"haschildren\":false,\"count\":76,\"name\":\"Britpop\",\"parentid\":1}]},\"id\":1,\"haschildren\":true,\"count\":522,\"name\":\"Alternative\",\"parentid\":0},{\"genrelist\":{\"genre\":[{\"id\":25,\"haschildren\":false,\"count\":764,\"name\":\"Acoustic Blues\",\"parentid\":24}]},\"id\":24,\"haschildren\":true,\"count\":1330,\"name\":\"Blues\",\"parentid\":0}]}},\"statusText\":\"Ok\"}}");
+        List<Genre> genres = clientUnderTest.queryGenres();
+        verify(mockedClient).fetchURL(new URL(url));
+/*
+{
+  "response": {
+    "statusCode": 200,
+    "data": {
+      "genrelist": {
+        "genre": [
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 2,
+                  "haschildren": false,
+                  "count": 94,
+                  "name": "Adult Alternative",
+                  "parentid": 1
+                },
+                {
+                  "id": 3,
+                  "haschildren": false,
+                  "count": 76,
+                  "name": "Britpop",
+                  "parentid": 1
+                }
+              ]
+            },
+            "id": 1,
+            "haschildren": true,
+            "count": 522,
+            "name": "Alternative",
+            "parentid": 0
+          },
+          {
+            "genrelist": {
+              "genre": [
+                {
+                  "id": 25,
+                  "haschildren": false,
+                  "count": 764,
+                  "name": "Acoustic Blues",
+                  "parentid": 24
+                }
+              ]
+            },
+            "id": 24,
+            "haschildren": true,
+            "count": 1330,
+            "name": "Blues",
+            "parentid": 0
+          }
+        ]
+      }
+    },
+    "statusText": "Ok"
+  }
+}
+ */
+        List<Genre> expectedGenres = new LinkedList<>();
+        Genre parent = new Genre("Alternative",1,null);
+        parent.addChild(new Genre("Adult Alternative",2,parent));
+        parent.addChild(new Genre("Britpop",3,parent));
+        expectedGenres.add(parent);
 
+        parent = new Genre("Blues",24,null);
+        parent.addChild(new Genre("Acoustic Blues",25,parent));
+        expectedGenres.add(parent);
+
+        assertEquals(expectedGenres, genres);
     }
 
 }
