@@ -2,6 +2,8 @@ package com.jacobarau.shoutcast;
 
 import android.util.Log;
 
+import com.jacobarau.net.HTTPClient;
+
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -14,6 +16,7 @@ import java.util.Queue;
 
 public class DirectoryClient {
     private static final String TAG = "DirectoryClient";
+    private HTTPClient httpClient;
 
     //===========================================
     //WHY AM I MISSING THIS "DeveloperKey" CLASS?
@@ -30,6 +33,10 @@ public class DirectoryClient {
     */
     //This key is trivially extracted from existing SHOUTcast binaries, but if you are savvy enough
     //to know how to do this, you are probably also smart enough to know why you shouldn't.
+
+    public DirectoryClient(HTTPClient httpClient) {
+        this.httpClient = httpClient;
+    }
 
     /**
      * Query stations matching any single parameter or a combination of parameters.
@@ -68,7 +75,7 @@ public class DirectoryClient {
             url += "&mt=" + mediaType;
             notAllNull = true;
         }
-        if (notAllNull) {
+        if (!notAllNull) {
             throw new IllegalArgumentException("At least one parameter must be non-null");
         }
 
@@ -80,7 +87,7 @@ public class DirectoryClient {
             throw new Exception("response.statusCode not 200");
         }
 
-        JSONArray stations = response.getJSONObject("response").getJSONObject("data").getJSONObject("stationList").getJSONArray("station");
+        JSONArray stations = response.getJSONObject("response").getJSONObject("data").getJSONObject("stationlist").getJSONArray("station");
         LinkedList<Station> ret = new LinkedList<>();
         for (int i = 0; i < stations.length(); i++) {
             JSONObject station = stations.getJSONObject(i);
@@ -99,14 +106,13 @@ public class DirectoryClient {
         return ret;
     }
 
-    private String convertStreamToString(java.io.InputStream is) {
-        java.util.Scanner s = new java.util.Scanner(is, "UTF-8").useDelimiter("\\A");
-        return s.hasNext() ? s.next() : "";
-    }
+
 
     private JSONObject getJSON(URL url) throws Exception {
-        URLConnection conn = url.openConnection();
-        String responseStr = convertStreamToString(conn.getInputStream());
+        String responseStr = httpClient.fetchURL(url);
+        if (responseStr == null) {
+            throw new Exception("Some error happened in URL request");
+        }
         JSONObject response = new JSONObject(responseStr);
         return response;
     }

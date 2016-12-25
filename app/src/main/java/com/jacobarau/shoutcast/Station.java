@@ -55,4 +55,35 @@ public class Station {
     public int getMaxListeners() {
         return maxListeners;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Station station = (Station) o;
+
+        if (id != station.id) return false;
+        if (bitrate != station.bitrate) return false;
+        if (listeners != station.listeners) return false;
+        if (maxListeners != station.maxListeners) return false;
+        if (!name.equals(station.name)) return false;
+        if (!mediaType.equals(station.mediaType)) return false;
+        if (!genre.equals(station.genre)) return false;
+        return nowPlaying.equals(station.nowPlaying);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name.hashCode();
+        result = 31 * result + mediaType.hashCode();
+        result = 31 * result + id;
+        result = 31 * result + bitrate;
+        result = 31 * result + genre.hashCode();
+        result = 31 * result + nowPlaying.hashCode();
+        result = 31 * result + listeners;
+        result = 31 * result + maxListeners;
+        return result;
+    }
 }

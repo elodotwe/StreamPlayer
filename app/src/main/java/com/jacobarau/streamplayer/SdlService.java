@@ -6,6 +6,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.util.SparseArray;
 
+import com.jacobarau.net.HTTPClient;
 import com.jacobarau.shoutcast.DirectoryClient;
 import com.jacobarau.shoutcast.Genre;
 import com.smartdevicelink.exception.SdlException;
@@ -398,7 +399,7 @@ public class SdlService extends Service implements IProxyListenerALM {
             Single.fromCallable(new Callable<List<Genre>>() {
                 @Override
                 public List<Genre> call() throws Exception {
-                    DirectoryClient dc = new DirectoryClient();
+                    DirectoryClient dc = new DirectoryClient(new HTTPClient());
                     return dc.queryGenres();
                 }
             }).subscribeOn(Schedulers.io()).observeOn(Schedulers.trampoline()).subscribe(new Subscriber<List<Genre>>() {
