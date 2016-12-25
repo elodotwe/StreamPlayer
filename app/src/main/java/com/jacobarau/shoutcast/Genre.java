@@ -36,4 +36,34 @@ public class Genre {
     public void addChild(Genre child) {
         this.children.add(child);
     }
+
+    @Override
+    public String toString() {
+        return "Genre{" +
+                "name='" + name + '\'' +
+                ", id=" + id +
+                ", children=" + children +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Genre genre = (Genre) o;
+
+        if (id != genre.id) return false;
+        if (!name.equals(genre.name)) return false;
+        return children.equals(genre.children);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name.hashCode();
+        result = 31 * result + id;
+        result = 31 * result + children.hashCode();
+        return result;
+    }
 }
