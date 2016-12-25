@@ -86,4 +86,18 @@ public class Station {
         result = 31 * result + maxListeners;
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "Station{" +
+                "name='" + name + '\'' +
+                ", mediaType='" + mediaType + '\'' +
+                ", id=" + id +
+                ", bitrate=" + bitrate +
+                ", genre='" + genre + '\'' +
+                ", nowPlaying='" + nowPlaying + '\'' +
+                ", listeners=" + listeners +
+                ", maxListeners=" + maxListeners +
+                '}';
+    }
 }
