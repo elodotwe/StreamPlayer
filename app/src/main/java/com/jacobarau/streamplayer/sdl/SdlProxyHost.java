@@ -1,14 +1,16 @@
-package com.jacobarau.streamplayer;
+package com.jacobarau.streamplayer.sdl;
 
-import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
-import android.os.IBinder;
 import android.util.Log;
 import android.util.SparseArray;
 
 import com.jacobarau.net.HTTPClient;
 import com.jacobarau.shoutcast.DirectoryClient;
 import com.jacobarau.shoutcast.Genre;
+import com.jacobarau.streamplayer.MainActivity;
+import com.jacobarau.streamplayer.R;
+import com.jacobarau.streamplayer.StreamingService;
 import com.smartdevicelink.exception.SdlException;
 import com.smartdevicelink.exception.SdlExceptionCause;
 import com.smartdevicelink.proxy.RPCRequest;
@@ -68,11 +70,9 @@ import com.smartdevicelink.proxy.rpc.SetAppIconResponse;
 import com.smartdevicelink.proxy.rpc.SetDisplayLayoutResponse;
 import com.smartdevicelink.proxy.rpc.SetGlobalPropertiesResponse;
 import com.smartdevicelink.proxy.rpc.SetMediaClockTimerResponse;
-import com.smartdevicelink.proxy.rpc.Show;
 import com.smartdevicelink.proxy.rpc.ShowConstantTbtResponse;
 import com.smartdevicelink.proxy.rpc.ShowResponse;
 import com.smartdevicelink.proxy.rpc.SliderResponse;
-import com.smartdevicelink.proxy.rpc.SoftButton;
 import com.smartdevicelink.proxy.rpc.SpeakResponse;
 import com.smartdevicelink.proxy.rpc.StreamRPCResponse;
 import com.smartdevicelink.proxy.rpc.SubscribeButton;
@@ -106,9 +106,12 @@ import rx.Single;
 import rx.Subscriber;
 import rx.schedulers.Schedulers;
 
-public class SdlService extends Service implements IProxyListenerALM {
+/**
+ * Created by jacob on 12/25/16.
+ */
 
-    private static final String TAG = "SDL Service";
+public class SdlProxyHost implements IProxyListenerALM {
+    private static final String TAG = "SdlProxyHost";
 
     private static final String APP_NAME = "Stream Player";
     private static final String APP_ID = "98765432";
@@ -124,8 +127,7 @@ public class SdlService extends Service implements IProxyListenerALM {
 
     // variable used to increment correlation ID for every request sent to SYNC
     public int autoIncCorrId = 0;
-    // variable to contain the current state of the service
-    private static SdlService instance = null;
+
 
     // variable to create and call functions of the SyncProxy
     private SdlProxyALM proxy = null;
@@ -167,60 +169,28 @@ public class SdlService extends Service implements IProxyListenerALM {
     GenreTreeConversionResult genreTree = null;
     SparseArray<GenreNode> currentChoiceSet = null;
 
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
+    Context context = null;
+
+    public SdlProxyHost(Context context) {
+        this.context = context;
     }
 
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        instance = this;
-        remoteFiles = new ArrayList<>();
-
-        Log.d(TAG, "oncreate happened");
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "start command happened");
-        if (intent != null) {
-            Log.d(TAG, "so did start proxy");
-            startProxy();
-
-        } else {
-            Log.d(TAG, "intent was null, no starty");
-        }
-
-        return START_STICKY;
-    }
-
-    @Override
-    public void onDestroy() {
-        disposeSyncProxy();
-        //LockScreenManager.clearLockScreen();
-        instance = null;
-        super.onDestroy();
-    }
-
-    public static SdlService getInstance() {
-        return instance;
-    }
-
-    public void startProxy() {
+    public boolean startProxy() {
         if (proxy == null) {
             try {
                 BaseTransportConfig xprt = new TCPTransportConfig(12345, "192.168.1.72", true); //.11 is VM, .6 is ALE
                 proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID, xprt);
                 currentChoiceSet = null;
+                return true;
             } catch (SdlException e) {
                 e.printStackTrace();
                 // error creating proxy, returned proxy = null
                 if (proxy == null) {
-                    stopSelf();
+                    return false;
                 }
             }
         }
+        return true;
     }
 
     public void disposeSyncProxy() {
@@ -237,22 +207,24 @@ public class SdlService extends Service implements IProxyListenerALM {
 
     }
 
-    public void reset() {
+    public boolean reset() {
         if (proxy != null) {
             try {
                 proxy.resetProxy();
                 this.firstNonHmiNone = true;
                 currentChoiceSet = null;
+                return true;
             } catch (SdlException e1) {
                 e1.printStackTrace();
                 //something goes wrong, & the proxy returns as null, stop the service.
                 // do not want a running service with a null proxy
                 if (proxy == null) {
-                    stopSelf();
+                    return false;
                 }
+                return true;
             }
         } else {
-            startProxy();
+            return startProxy();
         }
     }
 
@@ -323,7 +295,7 @@ public class SdlService extends Service implements IProxyListenerALM {
     private byte[] contentsOfResource(int resource) {
         InputStream is = null;
         try {
-            is = getResources().openRawResource(resource);
+            is = context.getResources().openRawResource(resource);
             ByteArrayOutputStream os = new ByteArrayOutputStream(is.available());
             final int buffersize = 4096;
             final byte[] buffer = new byte[buffersize];
@@ -361,8 +333,11 @@ public class SdlService extends Service implements IProxyListenerALM {
 
         clearLockScreen();
 
-        StreamingService.stopPlaying(this);
-        stopSelf();
+        StreamingService.stopPlaying(context);
+
+        //TODO: Check what rev this crept into. You don't even necessarily want the service to spin down
+        //upon all proxy closing errors...doesn't quite make sense.
+//        stopSelf();
     }
 
 
@@ -424,7 +399,7 @@ public class SdlService extends Service implements IProxyListenerALM {
                 public void onNext(List<Genre> genres) {
                     GenreTreeConversionResult result = convertGenreList(genres);
                     for (CreateInteractionChoiceSet cs : result.choiceSets) {
-                        int correlationID = SdlService.this.sendRpcRequest(cs);
+                        int correlationID = SdlProxyHost.this.sendRpcRequest(cs);
                         pendingInteractions.add(correlationID);
                     }
                     genreTree = result;
@@ -442,12 +417,12 @@ public class SdlService extends Service implements IProxyListenerALM {
 
         if (notification.getAudioStreamingState().equals(AudioStreamingState.NOT_AUDIBLE)) {
             if (userWantsStreaming) {
-                StreamingService.stopPlaying(this);
+                StreamingService.stopPlaying(context);
             }
         } else {
             if (userWantsStreaming) {
                 if (!StreamingService.isStreaming) {
-                    StreamingService.startPlaying(this, Radioseven);
+                    StreamingService.startPlaying(context, Radioseven);
                 }
             }
         }
@@ -547,7 +522,7 @@ public class SdlService extends Service implements IProxyListenerALM {
 
         // Check the mutable set for the AppIcon
         // If not present, upload the image
-        if (remoteFiles == null || !remoteFiles.contains(SdlService.ICON_FILENAME)) {
+        if (remoteFiles == null || !remoteFiles.contains(SdlProxyHost.ICON_FILENAME)) {
             try {
                 sendIcon();
             } catch (SdlException e) {
@@ -580,10 +555,10 @@ public class SdlService extends Service implements IProxyListenerALM {
     public void onOnLockScreenNotification(OnLockScreenStatus notification) {
         if (!lockscreenDisplayed && notification.getShowLockScreen() == LockScreenStatus.REQUIRED) {
             // Show lock screen
-            Intent intent = new Intent(getApplicationContext(), LockScreenActivity.class);
+            Intent intent = new Intent(context.getApplicationContext(), LockScreenActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_TASK);
             lockscreenDisplayed = true;
-            startActivity(intent);
+            context.startActivity(intent);
         } else if (lockscreenDisplayed && notification.getShowLockScreen() != LockScreenStatus.REQUIRED) {
             // Clear lock screen
             clearLockScreen();
@@ -591,9 +566,9 @@ public class SdlService extends Service implements IProxyListenerALM {
     }
 
     private void clearLockScreen() {
-        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+        Intent intent = new Intent(context.getApplicationContext(), MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
+        context.startActivity(intent);
         lockscreenDisplayed = false;
     }
 
@@ -605,11 +580,11 @@ public class SdlService extends Service implements IProxyListenerALM {
             switch (id) {
                 case CMDID_PLAY:
                     userWantsStreaming = true;
-                    StreamingService.startPlaying(this, Radioseven);
+                    StreamingService.startPlaying(context, Radioseven);
                     break;
                 case CMDID_PAUSE:
                     userWantsStreaming = false;
-                    StreamingService.stopPlaying(this);
+                    StreamingService.stopPlaying(context);
                     break;
                 case CMDID_GENRES:
                     if (pendingInteractions.size() == 0) {
@@ -645,7 +620,7 @@ public class SdlService extends Service implements IProxyListenerALM {
 
     }
 
-	
+
 	/*  Vehicle Data   */
 
 
@@ -760,9 +735,9 @@ public class SdlService extends Service implements IProxyListenerALM {
 
         if (notification.getButtonName().equals(ButtonName.OK)) {
             if (StreamingService.isStreaming) {
-                StreamingService.stopPlaying(this);
+                StreamingService.stopPlaying(context);
             } else {
-                StreamingService.startPlaying(this, Radioseven);
+                StreamingService.startPlaying(context, Radioseven);
             }
         }
     }

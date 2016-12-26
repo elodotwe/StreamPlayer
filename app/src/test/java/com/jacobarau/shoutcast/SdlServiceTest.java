@@ -4,7 +4,7 @@ package com.jacobarau.shoutcast;
 
 import android.util.Log;
 
-import com.jacobarau.streamplayer.SdlService;
+import com.jacobarau.streamplayer.sdl.SdlService;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,7 +39,7 @@ public class SdlServiceTest {
         Genre parent2 = new Genre("Second parent", 5, null);
         genres.add(parent2);
 
-        SdlService.GenreTreeConversionResult gcs = ss.convertGenreList(genres);
+//        SdlService.GenreTreeConversionResult gcs = ss.convertGenreList(genres);
 
 
     }

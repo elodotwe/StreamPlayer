@@ -1,7 +1,9 @@
-package com.jacobarau.streamplayer;
+package com.jacobarau.streamplayer.sdl;
 
 import android.app.Activity;
 import android.os.Bundle;
+
+import com.jacobarau.streamplayer.R;
 
 public class LockScreenActivity extends Activity {
 

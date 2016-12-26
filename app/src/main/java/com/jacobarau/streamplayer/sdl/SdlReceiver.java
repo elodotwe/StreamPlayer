@@ -1,4 +1,4 @@
-package com.jacobarau.streamplayer;
+package com.jacobarau.streamplayer.sdl;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
