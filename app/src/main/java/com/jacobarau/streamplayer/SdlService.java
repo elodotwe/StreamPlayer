@@ -19,6 +19,7 @@ import com.smartdevicelink.proxy.interfaces.IProxyListenerALM;
 import com.smartdevicelink.proxy.rpc.AddCommand;
 import com.smartdevicelink.proxy.rpc.AddCommandResponse;
 import com.smartdevicelink.proxy.rpc.AddSubMenuResponse;
+import com.smartdevicelink.proxy.rpc.Alert;
 import com.smartdevicelink.proxy.rpc.AlertManeuverResponse;
 import com.smartdevicelink.proxy.rpc.AlertResponse;
 import com.smartdevicelink.proxy.rpc.ChangeRegistrationResponse;
@@ -67,9 +68,11 @@ import com.smartdevicelink.proxy.rpc.SetAppIconResponse;
 import com.smartdevicelink.proxy.rpc.SetDisplayLayoutResponse;
 import com.smartdevicelink.proxy.rpc.SetGlobalPropertiesResponse;
 import com.smartdevicelink.proxy.rpc.SetMediaClockTimerResponse;
+import com.smartdevicelink.proxy.rpc.Show;
 import com.smartdevicelink.proxy.rpc.ShowConstantTbtResponse;
 import com.smartdevicelink.proxy.rpc.ShowResponse;
 import com.smartdevicelink.proxy.rpc.SliderResponse;
+import com.smartdevicelink.proxy.rpc.SoftButton;
 import com.smartdevicelink.proxy.rpc.SpeakResponse;
 import com.smartdevicelink.proxy.rpc.StreamRPCResponse;
 import com.smartdevicelink.proxy.rpc.SubscribeButton;
@@ -83,8 +86,10 @@ import com.smartdevicelink.proxy.rpc.enums.AudioStreamingState;
 import com.smartdevicelink.proxy.rpc.enums.ButtonName;
 import com.smartdevicelink.proxy.rpc.enums.FileType;
 import com.smartdevicelink.proxy.rpc.enums.HMILevel;
+import com.smartdevicelink.proxy.rpc.enums.InteractionMode;
 import com.smartdevicelink.proxy.rpc.enums.LockScreenStatus;
 import com.smartdevicelink.proxy.rpc.enums.SdlDisconnectedReason;
+import com.smartdevicelink.proxy.rpc.enums.TriggerSource;
 import com.smartdevicelink.transport.BaseTransportConfig;
 import com.smartdevicelink.transport.TCPTransportConfig;
 
@@ -160,6 +165,7 @@ public class SdlService extends Service implements IProxyListenerALM {
     }
 
     GenreTreeConversionResult genreTree = null;
+    SparseArray<GenreNode> currentChoiceSet = null;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -206,7 +212,7 @@ public class SdlService extends Service implements IProxyListenerALM {
             try {
                 BaseTransportConfig xprt = new TCPTransportConfig(12345, "192.168.1.72", true); //.11 is VM, .6 is ALE
                 proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID, xprt);
-
+                currentChoiceSet = null;
             } catch (SdlException e) {
                 e.printStackTrace();
                 // error creating proxy, returned proxy = null
@@ -236,6 +242,7 @@ public class SdlService extends Service implements IProxyListenerALM {
             try {
                 proxy.resetProxy();
                 this.firstNonHmiNone = true;
+                currentChoiceSet = null;
             } catch (SdlException e1) {
                 e1.printStackTrace();
                 //something goes wrong, & the proxy returns as null, stop the service.
@@ -410,7 +417,7 @@ public class SdlService extends Service implements IProxyListenerALM {
 
                 @Override
                 public void onError(Throwable e) {
-
+                    //TODO: retry strategy? User error messaging?
                 }
 
                 @Override
@@ -421,6 +428,7 @@ public class SdlService extends Service implements IProxyListenerALM {
                         pendingInteractions.add(correlationID);
                     }
                     genreTree = result;
+                    currentChoiceSet = null;
                 }
             });
 
@@ -607,7 +615,21 @@ public class SdlService extends Service implements IProxyListenerALM {
                     if (pendingInteractions.size() == 0) {
                         PerformInteraction pi = new PerformInteraction();
                         pi.setInitialText("Choose a genre");
-//                        pi.setInteractionChoiceSetIDList();
+                        List<Integer> ids = new LinkedList<>();
+                        ids.add(genreTree.topLevelChoiceSetID);
+                        pi.setInteractionChoiceSetIDList(ids);
+                        pi.setTimeout(36000);
+                        if (notification.getTriggerSource() == TriggerSource.TS_MENU) {
+                            pi.setInteractionMode(InteractionMode.MANUAL_ONLY);
+                        } else {
+                            pi.setInteractionMode(InteractionMode.BOTH);
+                        }
+                        sendRpcRequest(pi);
+                    } else {
+                        Alert alt = new Alert();
+                        alt.setAlertText1("Please wait while genres are loaded...");
+                        alt.setDuration(5000);
+                        sendRpcRequest(alt);
                     }
             }
             //onAddCommandClicked(id);
