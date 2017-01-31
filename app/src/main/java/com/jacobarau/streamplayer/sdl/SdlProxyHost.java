@@ -70,6 +70,7 @@ import com.smartdevicelink.proxy.rpc.SetAppIconResponse;
 import com.smartdevicelink.proxy.rpc.SetDisplayLayoutResponse;
 import com.smartdevicelink.proxy.rpc.SetGlobalPropertiesResponse;
 import com.smartdevicelink.proxy.rpc.SetMediaClockTimerResponse;
+import com.smartdevicelink.proxy.rpc.Show;
 import com.smartdevicelink.proxy.rpc.ShowConstantTbtResponse;
 import com.smartdevicelink.proxy.rpc.ShowResponse;
 import com.smartdevicelink.proxy.rpc.SliderResponse;
@@ -179,7 +180,7 @@ public class SdlProxyHost implements IProxyListenerALM {
         if (proxy == null) {
             try {
                 BaseTransportConfig xprt = new TCPTransportConfig(12345, "192.168.1.72", true); //.11 is VM, .6 is ALE
-                proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID, xprt);
+                proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID);//, xprt);
                 currentChoiceSet = null;
                 return true;
             } catch (SdlException e) {
@@ -588,18 +589,11 @@ public class SdlProxyHost implements IProxyListenerALM {
                     break;
                 case CMDID_GENRES:
                     if (pendingInteractions.size() == 0) {
-                        PerformInteraction pi = new PerformInteraction();
-                        pi.setInitialText("Choose a genre");
-                        List<Integer> ids = new LinkedList<>();
-                        ids.add(genreTree.topLevelChoiceSetID);
-                        pi.setInteractionChoiceSetIDList(ids);
-                        pi.setTimeout(36000);
-                        if (notification.getTriggerSource() == TriggerSource.TS_MENU) {
-                            pi.setInteractionMode(InteractionMode.MANUAL_ONLY);
-                        } else {
-                            pi.setInteractionMode(InteractionMode.BOTH);
-                        }
-                        sendRpcRequest(pi);
+                        GenreNode fakeNode = new GenreNode();
+                        fakeNode.choiceSetID = genreTree.topLevelChoiceSetID;
+                        fakeNode.children = genreTree.topLevel;
+
+                        performGenreNodeInteraction(fakeNode, notification.getTriggerSource());
                     } else {
                         Alert alt = new Alert();
                         alt.setAlertText1("Please wait while genres are loaded...");
@@ -609,6 +603,24 @@ public class SdlProxyHost implements IProxyListenerALM {
             }
             //onAddCommandClicked(id);
         }
+    }
+
+    private void performGenreNodeInteraction(GenreNode node, TriggerSource triggerSource) {
+        PerformInteraction pi = new PerformInteraction();
+        pi.setInitialText("Choose a genre");
+        List<Integer> ids = new LinkedList<>();
+        ids.add(node.choiceSetID);
+        pi.setInteractionChoiceSetIDList(ids);
+        pi.setTimeout(36000);
+        if (triggerSource == TriggerSource.TS_MENU) {
+            pi.setInteractionMode(InteractionMode.MANUAL_ONLY);
+        } else {
+            pi.setInteractionMode(InteractionMode.BOTH);
+        }
+
+        currentChoiceSet = node.children;
+
+        sendRpcRequest(pi);
     }
 
     /**
@@ -696,7 +708,27 @@ public class SdlProxyHost implements IProxyListenerALM {
 
     @Override
     public void onPerformInteractionResponse(PerformInteractionResponse response) {
-        // TODO Auto-generated method stub
+        if (response.getChoiceID() != null) {
+            GenreNode selected = currentChoiceSet.get(response.getChoiceID());
+            if (selected == null) {
+                Log.d(TAG, "onPerformInteractionResponse: selected choice ID was " + response.getChoiceID() + " but we have no GenreNode mapped to that ID!");
+                return;
+            }
+            if (selected.choiceSetID != null) {
+                if (response.getTriggerSource() == null) {
+                    Log.d(TAG, "onPerformInteractionResponse: selected trigger source was null, assuming VR");
+                    response.setTriggerSource(TriggerSource.TS_VR);
+                }
+                performGenreNodeInteraction(selected, response.getTriggerSource());
+            } else {
+                //We've reached a leaf node--select this genre.
+                Show show = new Show();
+                show.setMainField1("Genre selected: " + selected.genre.getName());
+                sendRpcRequest(show);
+            }
+        } else {
+            Log.d(TAG, "onPerformInteractionResponse: getChoiceID returns null");
+        }
     }
 
     @Override
