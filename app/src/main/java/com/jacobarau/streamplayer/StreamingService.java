@@ -119,7 +119,11 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
         NotificationManager mgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (intent.getAction() == ACTION_START) {
             Log.i(TAG, "START received");
-            Notification not = new Notification.Builder(this).setContentTitle("Stream Player").setContentText("Playing streaming media").setOngoing(true).build();
+            Notification not = new Notification.Builder(this).setContentTitle("Stream Player")
+                    .setContentText("Playing streaming media")
+                    .setOngoing(true)
+                    .setSmallIcon(R.drawable.ic_launcher)
+                    .build();
             mgr.notify(1, not);
 
             if (player == null) {
