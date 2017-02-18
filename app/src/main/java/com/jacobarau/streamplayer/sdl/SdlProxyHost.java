@@ -10,6 +10,7 @@ import com.jacobarau.shoutcast.DirectoryClient;
 import com.jacobarau.shoutcast.Genre;
 import com.jacobarau.streamplayer.MainActivity;
 import com.jacobarau.streamplayer.R;
+import com.jacobarau.streamplayer.StationPreset;
 import com.jacobarau.streamplayer.StreamingService;
 import com.smartdevicelink.exception.SdlException;
 import com.smartdevicelink.exception.SdlExceptionCause;
@@ -88,6 +89,7 @@ import com.smartdevicelink.proxy.rpc.enums.ButtonName;
 import com.smartdevicelink.proxy.rpc.enums.FileType;
 import com.smartdevicelink.proxy.rpc.enums.HMILevel;
 import com.smartdevicelink.proxy.rpc.enums.InteractionMode;
+import com.smartdevicelink.proxy.rpc.enums.LayoutMode;
 import com.smartdevicelink.proxy.rpc.enums.LockScreenStatus;
 import com.smartdevicelink.proxy.rpc.enums.SdlDisconnectedReason;
 import com.smartdevicelink.proxy.rpc.enums.TriggerSource;
@@ -120,7 +122,11 @@ public class SdlProxyHost implements IProxyListenerALM {
     private static final String ICON_FILENAME = "stream_player.png";
     private int iconCorrelationId;
 
-    private final String Radioseven = "http://188.65.154.167:8500";
+
+
+    List<StationPreset> presets = new LinkedList<>();
+
+    StationPreset currentPreset;
 
     boolean userWantsStreaming = false;
 
@@ -141,47 +147,24 @@ public class SdlProxyHost implements IProxyListenerALM {
 
     private final int CMDID_PLAY = 1;
     private final int CMDID_PAUSE = 2;
-    private final int CMDID_GENRES = 3;
-
-    //Represents the choice set for refinement of a given genre
-    //(for instance, genre = "Decades" and children would include
-    //"20s", "30s", "40s"...etc)
-    public class GenreNode {
-        Genre genre;
-        //Integer key is the Choice ID that would need to be selected in the parent's ChoiceSet in order
-        //to reach that GenreNode.
-        SparseArray<GenreNode> children;
-        //Choice set ID to present all children in PerformInteraction to user (null if this is a leaf)
-        Integer choiceSetID;
-    }
-
-    public class GenreTreeConversionResult {
-        SparseArray<GenreNode> topLevel;
-        int topLevelChoiceSetID;
-
-        //These get passed out like this just so that we don't have to recurse through the tree again.
-        //We will recurse through the tree as the user interacts later, but we want to fire all these
-        //at SYNC during initialization...
-        List<CreateInteractionChoiceSet> choiceSets;
-        //Used only during building of the data structure--number of contained Choices in structure.
-        int choiceCount;
-    }
-
-    GenreTreeConversionResult genreTree = null;
-    SparseArray<GenreNode> currentChoiceSet = null;
+    private final int CMDID_STATION_BASE = 3;
 
     Context context = null;
 
     public SdlProxyHost(Context context) {
         this.context = context;
+        presets.add(new StationPreset("DI Nightcore", "http://sc8.radioseven.se:8500"));
+        presets.add(new StationPreset("DI Vocal Trance", "http://209.73.138.21:80"));
+        presets.add(new StationPreset("DI Vocal Lounge", "http://111.223.51.7:8000"));
+        currentPreset = presets.get(0);
     }
 
     public boolean startProxy() {
         if (proxy == null) {
             try {
-                BaseTransportConfig xprt = new TCPTransportConfig(12345, "192.168.1.72", true); //.11 is VM, .6 is ALE
-                proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID);//, xprt);
-                currentChoiceSet = null;
+                BaseTransportConfig xprt = new TCPTransportConfig(12345, "192.168.1.2", true); //.11 is VM, .6 is ALE
+                proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID, xprt);
+
                 return true;
             } catch (SdlException e) {
                 e.printStackTrace();
@@ -213,7 +196,7 @@ public class SdlProxyHost implements IProxyListenerALM {
             try {
                 proxy.resetProxy();
                 this.firstNonHmiNone = true;
-                currentChoiceSet = null;
+
                 return true;
             } catch (SdlException e1) {
                 e1.printStackTrace();
@@ -377,36 +360,10 @@ public class SdlProxyHost implements IProxyListenerALM {
             firstNonHmiNone = false;
             addCommand("Play", CMDID_PLAY);
             addCommand("Pause", CMDID_PAUSE);
-            addCommand("Genres", CMDID_GENRES);
-
-            Single.fromCallable(new Callable<List<Genre>>() {
-                @Override
-                public List<Genre> call() throws Exception {
-                    DirectoryClient dc = new DirectoryClient(new HTTPClient());
-                    return dc.queryGenres();
-                }
-            }).subscribeOn(Schedulers.io()).observeOn(Schedulers.trampoline()).subscribe(new Subscriber<List<Genre>>() {
-                @Override
-                public void onCompleted() {
-
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    //TODO: retry strategy? User error messaging?
-                }
-
-                @Override
-                public void onNext(List<Genre> genres) {
-                    GenreTreeConversionResult result = convertGenreList(genres);
-                    for (CreateInteractionChoiceSet cs : result.choiceSets) {
-                        int correlationID = SdlProxyHost.this.sendRpcRequest(cs);
-                        pendingInteractions.add(correlationID);
-                    }
-                    genreTree = result;
-                    currentChoiceSet = null;
-                }
-            });
+            int idx = 0;
+            for (StationPreset p : presets) {
+                addCommand(p.name, CMDID_STATION_BASE + idx++);
+            }
 
             // Other app setup (SubMenu, CreateChoiceSet, etc.) would go here
         } else {
@@ -423,70 +380,14 @@ public class SdlProxyHost implements IProxyListenerALM {
         } else {
             if (userWantsStreaming) {
                 if (!StreamingService.isStreaming) {
-                    StreamingService.startPlaying(context, Radioseven);
+                    StreamingService.startPlaying(context, currentPreset.url);
                 }
             }
         }
         Log.i(TAG, "HMI status is " + notification.getAudioStreamingState() + ", " + notification.getHmiLevel() + ", " + notification.getSystemContext() + ", first run " + notification.getFirstRun());
     }
 
-    public GenreTreeConversionResult convertGenreList(List<Genre> genres) {
-        return convertGenreList(genres, 0, 0);
-    }
 
-    private void combineSparseArrays(SparseArray<GenreNode> into, SparseArray<GenreNode> from) {
-        for (int i = 0; i < from.size(); i++) {
-            into.append(from.keyAt(i), from.valueAt(i));
-        }
-    }
-
-    private GenreTreeConversionResult convertGenreList(List<Genre> genres, int startInteractionID, int startChoiceID) {
-        GenreTreeConversionResult result = new GenreTreeConversionResult();
-        result.choiceSets = new ArrayList<>();
-        result.topLevel = new SparseArray<>();
-
-        CreateInteractionChoiceSet topSet = new CreateInteractionChoiceSet();
-        topSet.setInteractionChoiceSetID(startInteractionID++);
-        result.topLevelChoiceSetID = topSet.getInteractionChoiceSetID();
-        List<Choice> topSetChoices = new ArrayList<>();
-        result.choiceSets.add(topSet);
-        result.choiceCount = 0;
-
-        for (int genre = 0; genre < genres.size(); genre++) {
-            GenreNode n = new GenreNode();
-            Genre g = genres.get(genre);
-            n.genre = g;
-            n.children = new SparseArray<>();
-
-            Choice c = new Choice();
-            c.setMenuName(g.getName());
-            //Choice IDs are global and must not collide.
-            //We pass startChoiceID into any recursive calls and increment it by the number of
-            //choices returned in order to keep from colliding.
-            c.setChoiceID(startChoiceID++);
-
-            result.choiceCount++;
-
-            ArrayList<String> vrCommands = new ArrayList<>();
-            vrCommands.add(g.getName());
-            c.setVrCommands(vrCommands);
-            topSetChoices.add(c);
-
-            if (g.getChildren().size() > 0) {
-                GenreTreeConversionResult children = convertGenreList(g.getChildren(), startInteractionID, startChoiceID);
-                startInteractionID += children.choiceSets.size();
-                startChoiceID += children.choiceCount;
-                result.choiceCount += children.choiceCount;
-                result.choiceSets.addAll(children.choiceSets);
-                combineSparseArrays(n.children, result.topLevel);
-                n.choiceSetID = children.topLevelChoiceSetID;
-            }
-
-            result.topLevel.put(c.getChoiceID(), n);
-        }
-        topSet.setChoiceSet(topSetChoices);
-        return result;
-    }
 
     /**
      * Will show a sample welcome message on screen as well as speak a sample welcome message
@@ -581,46 +482,20 @@ public class SdlProxyHost implements IProxyListenerALM {
             switch (id) {
                 case CMDID_PLAY:
                     userWantsStreaming = true;
-                    StreamingService.startPlaying(context, Radioseven);
+                    StreamingService.startPlaying(context, currentPreset.url);
                     break;
                 case CMDID_PAUSE:
                     userWantsStreaming = false;
                     StreamingService.stopPlaying(context);
                     break;
-                case CMDID_GENRES:
-                    if (pendingInteractions.size() == 0) {
-                        GenreNode fakeNode = new GenreNode();
-                        fakeNode.choiceSetID = genreTree.topLevelChoiceSetID;
-                        fakeNode.children = genreTree.topLevel;
-
-                        performGenreNodeInteraction(fakeNode, notification.getTriggerSource());
-                    } else {
-                        Alert alt = new Alert();
-                        alt.setAlertText1("Please wait while genres are loaded...");
-                        alt.setDuration(5000);
-                        sendRpcRequest(alt);
-                    }
+                default:
+                    currentPreset = presets.get(id - CMDID_STATION_BASE);
+                    userWantsStreaming = true;
+                    StreamingService.stopPlaying(context);
+                    StreamingService.startPlaying(context, currentPreset.url);
             }
             //onAddCommandClicked(id);
         }
-    }
-
-    private void performGenreNodeInteraction(GenreNode node, TriggerSource triggerSource) {
-        PerformInteraction pi = new PerformInteraction();
-        pi.setInitialText("Choose a genre");
-        List<Integer> ids = new LinkedList<>();
-        ids.add(node.choiceSetID);
-        pi.setInteractionChoiceSetIDList(ids);
-        pi.setTimeout(36000);
-        if (triggerSource == TriggerSource.TS_MENU) {
-            pi.setInteractionMode(InteractionMode.MANUAL_ONLY);
-        } else {
-            pi.setInteractionMode(InteractionMode.BOTH);
-        }
-
-        currentChoiceSet = node.children;
-
-        sendRpcRequest(pi);
     }
 
     /**
@@ -708,27 +583,7 @@ public class SdlProxyHost implements IProxyListenerALM {
 
     @Override
     public void onPerformInteractionResponse(PerformInteractionResponse response) {
-        if (response.getChoiceID() != null) {
-            GenreNode selected = currentChoiceSet.get(response.getChoiceID());
-            if (selected == null) {
-                Log.d(TAG, "onPerformInteractionResponse: selected choice ID was " + response.getChoiceID() + " but we have no GenreNode mapped to that ID!");
-                return;
-            }
-            if (selected.choiceSetID != null) {
-                if (response.getTriggerSource() == null) {
-                    Log.d(TAG, "onPerformInteractionResponse: selected trigger source was null, assuming VR");
-                    response.setTriggerSource(TriggerSource.TS_VR);
-                }
-                performGenreNodeInteraction(selected, response.getTriggerSource());
-            } else {
-                //We've reached a leaf node--select this genre.
-                Show show = new Show();
-                show.setMainField1("Genre selected: " + selected.genre.getName());
-                sendRpcRequest(show);
-            }
-        } else {
-            Log.d(TAG, "onPerformInteractionResponse: getChoiceID returns null");
-        }
+
     }
 
     @Override
@@ -767,9 +622,11 @@ public class SdlProxyHost implements IProxyListenerALM {
 
         if (notification.getButtonName().equals(ButtonName.OK)) {
             if (StreamingService.isStreaming) {
+                userWantsStreaming = false;
                 StreamingService.stopPlaying(context);
             } else {
-                StreamingService.startPlaying(context, Radioseven);
+                userWantsStreaming = true;
+                StreamingService.startPlaying(context, currentPreset.url);
             }
         }
     }
