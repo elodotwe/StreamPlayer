@@ -24,18 +24,26 @@ import com.google.android.exoplayer2.decoder.DecoderCounters;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.AdaptiveVideoTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
 import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.util.Util;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -56,13 +64,11 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
     private DataSource.Factory mediaDataSourceFactory;
 
     public static void startPlaying(Context ctx, String url) {
-        if (!isStreaming) {
-            isStreaming = true;
-            Intent intent = new Intent(ctx, StreamingService.class);
-            intent.setAction(StreamingService.ACTION_START);
-            intent.putExtra("url", url);
-            ctx.startService(intent);
-        }
+        isStreaming = true;
+        Intent intent = new Intent(ctx, StreamingService.class);
+        intent.setAction(StreamingService.ACTION_START);
+        intent.putExtra("url", url);
+        ctx.startService(intent);
     }
 
     public static void stopPlaying(Context ctx) {
@@ -126,15 +132,20 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
                     .build();
             mgr.notify(1, not);
 
+            if (player != null) {
+                player.setPlayWhenReady(false);
+                player.stop();
+                player = null;
+            }
+
             if (player == null) {
-                Log.i(TAG, "player is null");
                 // 1. Create a default TrackSelector
                 Handler mainHandler = new Handler();
                 BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
                 TrackSelection.Factory videoTrackSelectionFactory =
                         new AdaptiveVideoTrackSelection.Factory(bandwidthMeter);
                 TrackSelector trackSelector =
-                        new DefaultTrackSelector(mainHandler, videoTrackSelectionFactory);
+                        new DefaultTrackSelector(videoTrackSelectionFactory);//mainHandler, videoTrackSelectionFactory);
 
 // 2. Create a default LoadControl
                 LoadControl loadControl = new DefaultLoadControl();
@@ -146,10 +157,11 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
                 player.setAudioDebugListener(this);
 
 
-                mediaDataSourceFactory = buildDataSourceFactory(true);
+                mediaDataSourceFactory = new IcyDataSourceFactory();
 
                 MediaSource ms = new ExtractorMediaSource(Uri.parse(intent.getStringExtra("url")), mediaDataSourceFactory, new DefaultExtractorsFactory(),
                         mainHandler, null);
+
 
 
                 player.addListener(this);
@@ -174,6 +186,126 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
         }
 
         return START_STICKY;
+    }
+
+    class IcyDataSourceFactory implements DataSource.Factory {
+
+        @Override
+        public DataSource createDataSource() {
+            return new IcyDataSource();
+        }
+    }
+
+    class IcyDataSource implements DataSource {
+
+        Uri uri;
+        URL url;
+        HttpURLConnection conn;
+        boolean isIcy;
+        int icyDataChunkLength;
+        int dataChunkBytesRead; //remains == icyDataChunkLength until metadata read finishes
+
+        int metadataPos;
+        int metadataLen;
+        //No analogue exists for data chunks because we just return raw bytes to the caller
+        //as they come in, but we store up the whole metadata buffer before doing a notification
+        //of new metadata. Lazily allocated the max metadata length, what's 4K between friends.
+        byte[] metadataBuf = new byte[4080];
+
+        volatile boolean dead = false;
+        ConcurrentLinkedQueue<Byte> availableDataBytes = new ConcurrentLinkedQueue<>();
+
+        @Override
+        public long open(DataSpec dataSpec) throws IOException {
+            uri = dataSpec.uri;
+            url = new URL(uri.toString());
+            conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Icy-MetaData","1");
+            conn.connect();
+            if (conn.getHeaderField("icy-metaint") != null) {
+                icyDataChunkLength = Integer.valueOf(conn.getHeaderField("icy-metaint"));
+                Log.d(TAG, "ICY interval is " + icyDataChunkLength);
+                dataChunkBytesRead = 0;
+                isIcy = true;
+            } else {
+                isIcy = false;
+                Log.d(TAG, "Server didn't give us an ICY interval; assuming non-ICY server.");
+            }
+            new Thread(new ReaderThread()).start();
+            return dataSpec.length;
+        }
+
+        class ReaderThread implements Runnable {
+            @Override
+            public void run() {
+                while (!dead) {
+                    byte[] buf = new byte[1024];
+                    int len;
+                    try {
+                        len = conn.getInputStream().read(buf, 0, 1024);
+                    } catch (IOException e) {
+                        dead = true;
+                        Log.d(TAG, "Spinning down icy reader due to exception" ,e);
+                        break;
+                    }
+
+                    for (int i = 0; i < len; i++) {
+                        byte b = buf[i];
+                        if (dataChunkBytesRead < icyDataChunkLength) {
+                            metadataLen = 0;
+                            metadataPos = 0;
+                            availableDataBytes.offer(b);
+                            dataChunkBytesRead++;
+                        } else if (metadataLen == 0) {
+                            metadataLen = (b & 0xFF) * 16;
+                            Log.d(TAG, "Meta length is " + metadataLen);
+                            if (b == 0) {
+                                dataChunkBytesRead = 0;
+                            }
+                        } else if (metadataPos < metadataLen - 1){
+                            metadataBuf[metadataPos++] = b;
+                        } else {
+                            try {
+                                byte[] truncated = new byte[metadataLen];
+                                System.arraycopy(metadataBuf,0,truncated,0,metadataLen);
+                                String metaResult = new String(truncated, "UTF-8");
+                                Log.d(TAG,"Meta result is "+ truncated.length + " bytes long, \"" + metaResult + "\'");
+                            } catch (UnsupportedEncodingException e) {
+                                Log.e(TAG, "couldn't convert metadata result to utf8, unsupported encoding exception", e);
+                            }
+                            dataChunkBytesRead = 0;
+                        }
+                    }
+                }
+                Log.d(TAG, "spun down icy reader");
+            }
+        }
+        @Override
+        public int read(byte[] buffer, int offset, int readLength) throws IOException {
+            if (isIcy) {
+                int ret = 0;
+                while (!availableDataBytes.isEmpty() && readLength > 0) {
+                    Byte b = availableDataBytes.poll();
+                    buffer[offset++] = b;
+                    readLength--;
+                    ret++;
+                }
+                return ret;
+            } else {
+                return conn.getInputStream().read(buffer, offset, readLength);
+            }
+        }
+
+        @Override
+        public Uri getUri() {
+            return uri;
+        }
+
+        @Override
+        public void close() throws IOException {
+            conn.getInputStream().close();
+            conn.getOutputStream().close();
+        }
     }
 
     @Override
@@ -222,6 +354,11 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
     @Override
     public void onTimelineChanged(Timeline timeline, Object manifest) {
         Log.i(TAG, "Player onTimelineChanged timeline " + timeline + ", manifest " + manifest);
+    }
+
+    @Override
+    public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
+
     }
 
     @Override

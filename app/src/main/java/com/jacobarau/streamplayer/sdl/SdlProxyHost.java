@@ -16,6 +16,7 @@ import com.smartdevicelink.exception.SdlException;
 import com.smartdevicelink.exception.SdlExceptionCause;
 import com.smartdevicelink.proxy.RPCRequest;
 import com.smartdevicelink.proxy.SdlProxyALM;
+import com.smartdevicelink.proxy.SdlProxyConfigurationResources;
 import com.smartdevicelink.proxy.callbacks.OnServiceEnded;
 import com.smartdevicelink.proxy.callbacks.OnServiceNACKed;
 import com.smartdevicelink.proxy.interfaces.IProxyListenerALM;
@@ -66,6 +67,7 @@ import com.smartdevicelink.proxy.rpc.PutFileResponse;
 import com.smartdevicelink.proxy.rpc.ReadDIDResponse;
 import com.smartdevicelink.proxy.rpc.ResetGlobalPropertiesResponse;
 import com.smartdevicelink.proxy.rpc.ScrollableMessageResponse;
+import com.smartdevicelink.proxy.rpc.SdlMsgVersion;
 import com.smartdevicelink.proxy.rpc.SendLocationResponse;
 import com.smartdevicelink.proxy.rpc.SetAppIconResponse;
 import com.smartdevicelink.proxy.rpc.SetDisplayLayoutResponse;
@@ -81,17 +83,21 @@ import com.smartdevicelink.proxy.rpc.SubscribeButton;
 import com.smartdevicelink.proxy.rpc.SubscribeButtonResponse;
 import com.smartdevicelink.proxy.rpc.SubscribeVehicleDataResponse;
 import com.smartdevicelink.proxy.rpc.SystemRequestResponse;
+import com.smartdevicelink.proxy.rpc.TTSChunk;
 import com.smartdevicelink.proxy.rpc.UnsubscribeButtonResponse;
 import com.smartdevicelink.proxy.rpc.UnsubscribeVehicleDataResponse;
 import com.smartdevicelink.proxy.rpc.UpdateTurnListResponse;
+import com.smartdevicelink.proxy.rpc.enums.AppHMIType;
 import com.smartdevicelink.proxy.rpc.enums.AudioStreamingState;
 import com.smartdevicelink.proxy.rpc.enums.ButtonName;
 import com.smartdevicelink.proxy.rpc.enums.FileType;
 import com.smartdevicelink.proxy.rpc.enums.HMILevel;
 import com.smartdevicelink.proxy.rpc.enums.InteractionMode;
+import com.smartdevicelink.proxy.rpc.enums.Language;
 import com.smartdevicelink.proxy.rpc.enums.LayoutMode;
 import com.smartdevicelink.proxy.rpc.enums.LockScreenStatus;
 import com.smartdevicelink.proxy.rpc.enums.SdlDisconnectedReason;
+import com.smartdevicelink.proxy.rpc.enums.SpeechCapabilities;
 import com.smartdevicelink.proxy.rpc.enums.TriggerSource;
 import com.smartdevicelink.transport.BaseTransportConfig;
 import com.smartdevicelink.transport.TCPTransportConfig;
@@ -163,7 +169,7 @@ public class SdlProxyHost implements IProxyListenerALM {
         if (proxy == null) {
             try {
                 BaseTransportConfig xprt = new TCPTransportConfig(12345, "192.168.1.2", true); //.11 is VM, .6 is ALE
-                proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID, xprt);
+                proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID);//, xprt);
 
                 return true;
             } catch (SdlException e) {
@@ -192,11 +198,10 @@ public class SdlProxyHost implements IProxyListenerALM {
     }
 
     public boolean reset() {
+        this.firstNonHmiNone = true;
         if (proxy != null) {
             try {
                 proxy.resetProxy();
-                this.firstNonHmiNone = true;
-
                 return true;
             } catch (SdlException e1) {
                 e1.printStackTrace();
@@ -304,7 +309,7 @@ public class SdlProxyHost implements IProxyListenerALM {
 
     @Override
     public void onProxyClosed(String info, Exception e, SdlDisconnectedReason reason) {
-
+        Log.v(TAG, "Proxy is closed! " + info + ", " + e + ", " + reason);
         if (!(e instanceof SdlException)) {
             Log.v(TAG, "reset proxy in onproxy closed");
             reset();
@@ -326,6 +331,7 @@ public class SdlProxyHost implements IProxyListenerALM {
 
 
     private void addCommand(String name, int cmdID) {
+        Log.v(TAG, "Requesting to add " + name + " with cmdID " + cmdID);
         AddCommand command;
         MenuParams params = new MenuParams();
         params.setMenuName(name);
@@ -370,6 +376,7 @@ public class SdlProxyHost implements IProxyListenerALM {
             //We have HMI_NONE
             if (notification.getFirstRun()) {
                 uploadImages();
+                firstNonHmiNone = true;
             }
         }
 
@@ -491,7 +498,6 @@ public class SdlProxyHost implements IProxyListenerALM {
                 default:
                     currentPreset = presets.get(id - CMDID_STATION_BASE);
                     userWantsStreaming = true;
-                    StreamingService.stopPlaying(context);
                     StreamingService.startPlaying(context, currentPreset.url);
             }
             //onAddCommandClicked(id);
@@ -503,7 +509,7 @@ public class SdlProxyHost implements IProxyListenerALM {
      */
     @Override
     public void onAddCommandResponse(AddCommandResponse response) {
-        Log.i(TAG, "AddCommand response from SDL: " + response);
+        Log.i(TAG, "AddCommand response from SDL: " + response.getResultCode().name() + ", " + response.getInfo());
 
     }
 
