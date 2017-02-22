@@ -38,6 +38,7 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.util.Util;
+import com.jacobarau.streamplayer.sdl.SdlProxyHost;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -62,6 +63,15 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
     DecoderCounters cntr = null;
 
     private DataSource.Factory mediaDataSourceFactory;
+
+    private final Object streamTitleLock = new Object();
+    private String streamTitle = null;
+
+    public String getStreamTitle() {
+        synchronized (streamTitleLock) {
+            return streamTitle;
+        }
+    }
 
     public static void startPlaying(Context ctx, String url) {
         isStreaming = true;
@@ -268,8 +278,27 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
                             try {
                                 byte[] truncated = new byte[metadataLen];
                                 System.arraycopy(metadataBuf,0,truncated,0,metadataLen);
-                                String metaResult = new String(truncated, "UTF-8");
+                                String metaResult = new String(truncated, "UTF-8").trim();
                                 Log.d(TAG,"Meta result is "+ truncated.length + " bytes long, \"" + metaResult + "\'");
+                                int idx = metaResult.indexOf("StreamTitle='");
+                                if (idx == -1) {
+                                    Log.e(TAG, "StreamTitle not part of the received data, so ignoring the whole meta block");
+                                } else {
+                                    metaResult = metaResult.substring(idx + "StreamTitle='".length());
+                                    idx = metaResult.indexOf("';");
+                                    if (idx == -1) {
+                                        Log.e(TAG, "End of StreamTitle missing. Ignoring the whole meta block.");
+                                    } else {
+                                        metaResult = metaResult.substring(0, idx);
+                                        Log.d(TAG, "meta result is now " + metaResult);
+                                        synchronized (streamTitleLock) {
+                                            streamTitle = metaResult;
+                                        }
+                                        Intent metaRefresh = new Intent(SdlProxyHost.INTENT_METADATA_REFRESH);
+                                        metaRefresh.putExtra("streamTitle", metaResult);
+                                        StreamingService.this.getApplicationContext().sendBroadcast(metaRefresh);
+                                    }
+                                }
                             } catch (UnsupportedEncodingException e) {
                                 Log.e(TAG, "couldn't convert metadata result to utf8, unsupported encoding exception", e);
                             }

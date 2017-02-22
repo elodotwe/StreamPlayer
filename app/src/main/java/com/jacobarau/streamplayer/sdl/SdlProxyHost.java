@@ -1,7 +1,9 @@
 package com.jacobarau.streamplayer.sdl;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -157,12 +159,27 @@ public class SdlProxyHost implements IProxyListenerALM {
 
     Context context = null;
 
+    public static final String INTENT_METADATA_REFRESH = "com.jacobarau.streamplayer.metadata_refresh";
+
+    class MetadataChangeReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "metadata refresh intent caught");
+            Show metaShow = new Show();
+            metaShow.setMainField1(currentPreset.name);
+            metaShow.setMainField2(intent.getStringExtra("streamTitle"));
+            sendRpcRequest(metaShow);
+        }
+    }
+
     public SdlProxyHost(Context context) {
         this.context = context;
         presets.add(new StationPreset("DI Nightcore", "http://sc8.radioseven.se:8500"));
         presets.add(new StationPreset("DI Vocal Trance", "http://209.73.138.21:80"));
         presets.add(new StationPreset("DI Vocal Lounge", "http://111.223.51.7:8000"));
         currentPreset = presets.get(0);
+
+        context.registerReceiver(new MetadataChangeReceiver(), new IntentFilter(INTENT_METADATA_REFRESH));
     }
 
     public boolean startProxy() {
