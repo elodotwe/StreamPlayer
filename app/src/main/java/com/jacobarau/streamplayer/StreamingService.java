@@ -54,7 +54,6 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
     private static final String ACTION_START = "com.jacobarau.streamplayer.action.START";
     private static final String ACTION_STOP = "com.jacobarau.streamplayer.action.STOP";
 
-    private static final String ACTION_GET_GENRES = "com.jacobarau.streamplayer.action.GET_GENRES";
 
     SimpleExoPlayer player = null;
     public static boolean isStreaming = false;
@@ -88,12 +87,6 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
             intent.setAction(StreamingService.ACTION_STOP);
             ctx.startService(intent);
         }
-    }
-
-    public static void queryGenres(Context ctx) {
-        Intent intent = new Intent(ctx, StreamingService.class);
-        intent.setAction(StreamingService.ACTION_GET_GENRES);
-        ctx.startService(intent);
     }
 
     public StreamingService() {

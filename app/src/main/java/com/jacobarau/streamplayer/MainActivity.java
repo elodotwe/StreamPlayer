@@ -33,8 +33,4 @@ public class MainActivity extends AppCompatActivity {
     public void onStopButton(View view) {
         StreamingService.stopPlaying(this);
     }
-
-    public void onQuery(View view) {
-        StreamingService.queryGenres(this);
-    }
 }

@@ -23,6 +23,14 @@ public class SdlReceiver extends BroadcastReceiver {
 //				startIntent.putExtras(intent);
                 context.startService(startIntent);
             }
+        } else if (intent.getAction().compareTo(BluetoothDevice.ACTION_ACL_DISCONNECTED) == 0) {
+            Log.i(TAG, "ACL_DISCONNECTED happened");
+            SdlService serviceInstance = SdlService.getInstance();
+            if (serviceInstance != null) {
+                Intent startIntent = new Intent(context, SdlService.class);
+//				startIntent.putExtras(intent);
+                context.stopService(startIntent);
+            }
         } else if (intent.getAction().equals(android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY)) {
             // signal your service to stop playback
             //TODO
