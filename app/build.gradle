@@ -41,4 +41,5 @@ dependencies {
     compile group: 'org.powermock', name: 'powermock-api-mockito', version: '1.6.6'
 
     testCompile 'org.json:json:20080701'
+    testCompile "org.robolectric:robolectric:3.3.1"
 }
