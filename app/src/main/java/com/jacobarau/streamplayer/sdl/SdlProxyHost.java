@@ -5,12 +5,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
-import android.util.SparseArray;
 
-import com.jacobarau.net.HTTPClient;
-import com.jacobarau.shoutcast.DirectoryClient;
-import com.jacobarau.shoutcast.Genre;
 import com.jacobarau.streamplayer.MainActivity;
+import com.jacobarau.streamplayer.PrefsManager;
 import com.jacobarau.streamplayer.R;
 import com.jacobarau.streamplayer.StationPreset;
 import com.jacobarau.streamplayer.StreamingService;
@@ -18,19 +15,15 @@ import com.smartdevicelink.exception.SdlException;
 import com.smartdevicelink.exception.SdlExceptionCause;
 import com.smartdevicelink.proxy.RPCRequest;
 import com.smartdevicelink.proxy.SdlProxyALM;
-import com.smartdevicelink.proxy.SdlProxyConfigurationResources;
 import com.smartdevicelink.proxy.callbacks.OnServiceEnded;
 import com.smartdevicelink.proxy.callbacks.OnServiceNACKed;
 import com.smartdevicelink.proxy.interfaces.IProxyListenerALM;
 import com.smartdevicelink.proxy.rpc.AddCommand;
 import com.smartdevicelink.proxy.rpc.AddCommandResponse;
 import com.smartdevicelink.proxy.rpc.AddSubMenuResponse;
-import com.smartdevicelink.proxy.rpc.Alert;
 import com.smartdevicelink.proxy.rpc.AlertManeuverResponse;
 import com.smartdevicelink.proxy.rpc.AlertResponse;
 import com.smartdevicelink.proxy.rpc.ChangeRegistrationResponse;
-import com.smartdevicelink.proxy.rpc.Choice;
-import com.smartdevicelink.proxy.rpc.CreateInteractionChoiceSet;
 import com.smartdevicelink.proxy.rpc.CreateInteractionChoiceSetResponse;
 import com.smartdevicelink.proxy.rpc.DeleteCommandResponse;
 import com.smartdevicelink.proxy.rpc.DeleteFileResponse;
@@ -62,14 +55,12 @@ import com.smartdevicelink.proxy.rpc.OnTBTClientState;
 import com.smartdevicelink.proxy.rpc.OnTouchEvent;
 import com.smartdevicelink.proxy.rpc.OnVehicleData;
 import com.smartdevicelink.proxy.rpc.PerformAudioPassThruResponse;
-import com.smartdevicelink.proxy.rpc.PerformInteraction;
 import com.smartdevicelink.proxy.rpc.PerformInteractionResponse;
 import com.smartdevicelink.proxy.rpc.PutFile;
 import com.smartdevicelink.proxy.rpc.PutFileResponse;
 import com.smartdevicelink.proxy.rpc.ReadDIDResponse;
 import com.smartdevicelink.proxy.rpc.ResetGlobalPropertiesResponse;
 import com.smartdevicelink.proxy.rpc.ScrollableMessageResponse;
-import com.smartdevicelink.proxy.rpc.SdlMsgVersion;
 import com.smartdevicelink.proxy.rpc.SendLocationResponse;
 import com.smartdevicelink.proxy.rpc.SetAppIconResponse;
 import com.smartdevicelink.proxy.rpc.SetDisplayLayoutResponse;
@@ -85,37 +76,24 @@ import com.smartdevicelink.proxy.rpc.SubscribeButton;
 import com.smartdevicelink.proxy.rpc.SubscribeButtonResponse;
 import com.smartdevicelink.proxy.rpc.SubscribeVehicleDataResponse;
 import com.smartdevicelink.proxy.rpc.SystemRequestResponse;
-import com.smartdevicelink.proxy.rpc.TTSChunk;
 import com.smartdevicelink.proxy.rpc.UnsubscribeButtonResponse;
 import com.smartdevicelink.proxy.rpc.UnsubscribeVehicleDataResponse;
 import com.smartdevicelink.proxy.rpc.UpdateTurnListResponse;
-import com.smartdevicelink.proxy.rpc.enums.AppHMIType;
 import com.smartdevicelink.proxy.rpc.enums.AudioStreamingState;
 import com.smartdevicelink.proxy.rpc.enums.ButtonName;
 import com.smartdevicelink.proxy.rpc.enums.FileType;
 import com.smartdevicelink.proxy.rpc.enums.HMILevel;
-import com.smartdevicelink.proxy.rpc.enums.InteractionMode;
-import com.smartdevicelink.proxy.rpc.enums.Language;
-import com.smartdevicelink.proxy.rpc.enums.LayoutMode;
 import com.smartdevicelink.proxy.rpc.enums.LockScreenStatus;
 import com.smartdevicelink.proxy.rpc.enums.SdlDisconnectedReason;
-import com.smartdevicelink.proxy.rpc.enums.SpeechCapabilities;
-import com.smartdevicelink.proxy.rpc.enums.TriggerSource;
 import com.smartdevicelink.transport.BaseTransportConfig;
 import com.smartdevicelink.transport.TCPTransportConfig;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Callable;
-
-import rx.Single;
-import rx.Subscriber;
-import rx.schedulers.Schedulers;
 
 /**
  * Created by jacob on 12/25/16.
@@ -174,9 +152,9 @@ public class SdlProxyHost implements IProxyListenerALM {
 
     public SdlProxyHost(Context context) {
         this.context = context;
-        presets.add(new StationPreset("DI Nightcore", "http://sc8.radioseven.se:8500"));
-        presets.add(new StationPreset("DI Vocal Trance", "http://209.73.138.21:80"));
-        presets.add(new StationPreset("DI Vocal Lounge", "http://111.223.51.7:8000"));
+        PrefsManager mgr = new PrefsManager(context);
+        presets = mgr.getStations();
+
         currentPreset = presets.get(0);
 
         context.registerReceiver(new MetadataChangeReceiver(), new IntentFilter(INTENT_METADATA_REFRESH));
@@ -185,8 +163,8 @@ public class SdlProxyHost implements IProxyListenerALM {
     public boolean startProxy() {
         if (proxy == null) {
             try {
-                BaseTransportConfig xprt = new TCPTransportConfig(12345, "192.168.1.2", true); //.11 is VM, .6 is ALE
-                proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID);//, xprt);
+                BaseTransportConfig xprt = new TCPTransportConfig(12345, "10.0.0.8", true); //.11 is VM, .6 is ALE
+                proxy = new SdlProxyALM(this, APP_NAME, true, APP_ID); //, xprt);
 
                 return true;
             } catch (SdlException e) {

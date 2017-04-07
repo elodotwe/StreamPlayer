@@ -1,11 +1,8 @@
 package com.jacobarau.streamplayer;
 
-import com.jacobarau.shoutcast.Station;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
@@ -21,12 +18,12 @@ import static junit.framework.Assert.assertEquals;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(constants = BuildConfig.class)
-public class StationManagerTest {
-    StationManager stationManager;
+public class PrefsManagerTest {
+    PrefsManager prefsManager;
 
     @Before
     public void setUp() {
-        stationManager = new StationManager(RuntimeEnvironment.application.getApplicationContext());
+        prefsManager = new PrefsManager(RuntimeEnvironment.application.getApplicationContext());
     }
 
     @Test
@@ -36,21 +33,21 @@ public class StationManagerTest {
         final String S2_NAME = "Station 2";
         final String S2_URL = "http://3456.com";
 
-        stationManager.addStation(S1_NAME, S1_URL);
-        stationManager.addStation(S2_NAME, S2_URL);
+        prefsManager.addStation(S1_NAME, S1_URL);
+        prefsManager.addStation(S2_NAME, S2_URL);
 
         List<StationPreset> stations = new ArrayList<>();
         stations.add(new StationPreset(S1_NAME, S1_URL));
         stations.add(new StationPreset(S2_NAME, S2_URL));
-        assertEquals(stations, stationManager.getStations());
+        assertEquals(stations, prefsManager.getStations());
 
         List<StationPreset> removeList = new ArrayList<>();
-        stationManager.removeStations(removeList);
-        assertEquals(stations, stationManager.getStations());
+        prefsManager.removeStations(removeList);
+        assertEquals(stations, prefsManager.getStations());
 
         removeList.add(stations.get(0));
-        stationManager.removeStations(removeList);
+        prefsManager.removeStations(removeList);
         stations.remove(0);
-        assertEquals(stations, stationManager.getStations());
+        assertEquals(stations, prefsManager.getStations());
     }
 }
