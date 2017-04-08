@@ -126,7 +126,7 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "onStartCommand with intent " + intent + ", flags " + flags + ", startId " + startId);
         NotificationManager mgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        if (intent.getAction() == ACTION_START) {
+        if (intent.getAction().equals(ACTION_START)) {
             Log.i(TAG, "START received");
             Notification not = new Notification.Builder(this).setContentTitle("Stream Player")
                     .setContentText("Playing streaming media")
@@ -135,53 +135,43 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
                     .build();
             mgr.notify(1, not);
 
+            //It is possible that we received two START commands in a row for different URLs.
+            //In this case, only the most recent command should take effect.
+            //If we have a live player instance, tear it down completely.
             if (player != null) {
                 player.setPlayWhenReady(false);
                 player.stop();
+                //This will block until the player is dead.
+                player.release();
                 player = null;
             }
 
-            if (player == null) {
-                // 1. Create a default TrackSelector
-                Handler mainHandler = new Handler();
-                BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
-                TrackSelection.Factory videoTrackSelectionFactory =
-                        new AdaptiveVideoTrackSelection.Factory(bandwidthMeter);
-                TrackSelector trackSelector =
-                        new DefaultTrackSelector(videoTrackSelectionFactory);//mainHandler, videoTrackSelectionFactory);
+            Handler mainHandler = new Handler();
+            TrackSelector trackSelector = new DefaultTrackSelector();
 
-// 2. Create a default LoadControl
-                LoadControl loadControl = new DefaultLoadControl();
+            //TODO: let the user decide parameters for this (buffer sizes etc)
+            LoadControl loadControl = new DefaultLoadControl();
 
+            player = ExoPlayerFactory.newSimpleInstance(this, trackSelector, loadControl);
+            player.setAudioDebugListener(this);
 
-// 3. Create the player
-                player =
-                        ExoPlayerFactory.newSimpleInstance(this, trackSelector, loadControl);
-                player.setAudioDebugListener(this);
+            mediaDataSourceFactory = new IcyDataSourceFactory();
 
+            MediaSource ms = new ExtractorMediaSource(Uri.parse(intent.getStringExtra("url")), mediaDataSourceFactory, new DefaultExtractorsFactory(),
+                    mainHandler, null);
 
-                mediaDataSourceFactory = new IcyDataSourceFactory();
-
-                MediaSource ms = new ExtractorMediaSource(Uri.parse(intent.getStringExtra("url")), mediaDataSourceFactory, new DefaultExtractorsFactory(),
-                        mainHandler, null);
-
-
-
-                player.addListener(this);
-                Log.i(TAG, "About to prepare");
-                player.prepare(ms);
-                Log.i(TAG, "Prepare completed");
-
-                Log.i(TAG, "Reached end of player null block");
-            }
-
+            player.addListener(this);
+            Log.i(TAG, "About to prepare");
+            player.prepare(ms);
+            Log.i(TAG, "Prepare completed");
         }
 
-        if (intent.getAction() == ACTION_STOP) {
+        if (intent.getAction().equals(ACTION_STOP)) {
             Log.i(TAG, "STOP received!");
             if (player != null) {
                 player.setPlayWhenReady(false);
                 player.stop();
+                player.release();
                 player = null;
             }
             mgr.cancel(1);
