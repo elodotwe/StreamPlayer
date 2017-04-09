@@ -26,6 +26,7 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile files('libs/SmartDeviceLinkLibrary-4.0.0-Android.jar')
+    compile files('libs/ostermillerutils-1.08.02.jar')
     //was 2.0.0
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
     // https://mvnrepository.com/artifact/org.powermock/powermock-module-junit4

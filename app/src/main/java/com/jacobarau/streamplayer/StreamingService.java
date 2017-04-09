@@ -11,6 +11,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.Ostermiller.util.CircularByteBuffer;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
@@ -41,6 +42,7 @@ import com.google.android.exoplayer2.util.Util;
 import com.jacobarau.streamplayer.sdl.SdlProxyHost;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -203,17 +205,9 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
         HttpURLConnection conn;
         boolean isIcy;
         int icyDataChunkLength;
-        int dataChunkBytesRead; //remains == icyDataChunkLength until metadata read finishes
-
-        int metadataPos;
-        int metadataLen;
-        //No analogue exists for data chunks because we just return raw bytes to the caller
-        //as they come in, but we store up the whole metadata buffer before doing a notification
-        //of new metadata. Lazily allocated the max metadata length, what's 4K between friends.
-        byte[] metadataBuf = new byte[4080];
 
         volatile boolean dead = false;
-        ConcurrentLinkedQueue<Byte> availableDataBytes = new ConcurrentLinkedQueue<>();
+        CircularByteBuffer availableDataBytes;
 
         @Override
         public long open(DataSpec dataSpec) throws IOException {
@@ -225,8 +219,8 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
             if (conn.getHeaderField("icy-metaint") != null) {
                 icyDataChunkLength = Integer.valueOf(conn.getHeaderField("icy-metaint"));
                 Log.d(TAG, "ICY interval is " + icyDataChunkLength);
-                dataChunkBytesRead = 0;
                 isIcy = true;
+                availableDataBytes = new CircularByteBuffer();
             } else {
                 isIcy = false;
                 Log.d(TAG, "Server didn't give us an ICY interval; assuming non-ICY server.");
@@ -236,80 +230,123 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
         }
 
         class ReaderThread implements Runnable {
+            private final int WAITING_META_LENGTH = 0;
+            private final int WAITING_METADATA = 1;
+            private final int WAITING_DATA = 2;
+
             @Override
             public void run() {
+                int decoderState = WAITING_DATA;
+                int stateByteCount = 0;
+
+                int metaChunkLength = 0;
+                //Lazily allocated to the max size of the metadata chunk
+                byte[] metaBuffer = new byte[4096];
+                byte[] buf = new byte[1024];
+                InputStream inputStream;
+                try {
+                    inputStream = conn.getInputStream();
+                } catch (IOException e) {
+                    dead = true;
+                    Log.d(TAG, "Spinning down icy reader due to exception" ,e);
+                    return;
+                }
+
+                readLoop:
                 while (!dead) {
-                    byte[] buf = new byte[1024];
-                    int len;
+                    int bufferLen;
+                    int bufferConsumed = 0;
                     try {
-                        len = conn.getInputStream().read(buf, 0, 1024);
+                        bufferLen = inputStream.read(buf, 0, 1024);
                     } catch (IOException e) {
                         dead = true;
                         Log.d(TAG, "Spinning down icy reader due to exception" ,e);
                         break;
                     }
 
-                    for (int i = 0; i < len; i++) {
-                        byte b = buf[i];
-                        if (dataChunkBytesRead < icyDataChunkLength) {
-                            metadataLen = 0;
-                            metadataPos = 0;
-                            availableDataBytes.offer(b);
-                            dataChunkBytesRead++;
-                        } else if (metadataLen == 0) {
-                            metadataLen = (b & 0xFF) * 16;
-                            Log.d(TAG, "Meta length is " + metadataLen);
-                            if (b == 0) {
-                                dataChunkBytesRead = 0;
-                            }
-                        } else if (metadataPos < metadataLen - 1){
-                            metadataBuf[metadataPos++] = b;
-                        } else {
-                            try {
-                                byte[] truncated = new byte[metadataLen];
-                                System.arraycopy(metadataBuf,0,truncated,0,metadataLen);
-                                String metaResult = new String(truncated, "UTF-8").trim();
-                                Log.d(TAG,"Meta result is "+ truncated.length + " bytes long, \"" + metaResult + "\'");
-                                int idx = metaResult.indexOf("StreamTitle='");
-                                if (idx == -1) {
-                                    Log.e(TAG, "StreamTitle not part of the received data, so ignoring the whole meta block");
-                                } else {
-                                    metaResult = metaResult.substring(idx + "StreamTitle='".length());
-                                    idx = metaResult.indexOf("';");
-                                    if (idx == -1) {
-                                        Log.e(TAG, "End of StreamTitle missing. Ignoring the whole meta block.");
-                                    } else {
-                                        metaResult = metaResult.substring(0, idx);
-                                        Log.d(TAG, "meta result is now " + metaResult);
-                                        synchronized (streamTitleLock) {
-                                            streamTitle = metaResult;
-                                        }
-                                        Intent metaRefresh = new Intent(SdlProxyHost.INTENT_METADATA_REFRESH);
-                                        metaRefresh.putExtra("streamTitle", metaResult);
-                                        StreamingService.this.getApplicationContext().sendBroadcast(metaRefresh);
-                                    }
+                    while (true) {
+                        if (bufferConsumed == bufferLen) break;
+
+                        switch (decoderState) {
+                            case WAITING_DATA:
+                                //Grab either all the data available or the remainder of what we expect,
+                                //whichever is smaller.
+                                int dataToConsume = Math.min(bufferLen - bufferConsumed, icyDataChunkLength - stateByteCount);
+                                try {
+                                    availableDataBytes.getOutputStream().write(buf, bufferConsumed, dataToConsume);
+                                } catch (IOException e) {
+                                    Log.e(TAG, "ReaderThread.run(): WAITING_DATA state unable to write data bytes to the circular byte buffer. Spinning down.", e);
+                                    break readLoop;
                                 }
-                            } catch (UnsupportedEncodingException e) {
-                                Log.e(TAG, "couldn't convert metadata result to utf8, unsupported encoding exception", e);
-                            }
-                            dataChunkBytesRead = 0;
+                                stateByteCount += dataToConsume;
+                                bufferConsumed += dataToConsume;
+
+                                //If we still need bytes for this data chunk (but have exhausted the buffer)
+                                if (icyDataChunkLength - stateByteCount == 0) {
+                                    decoderState = WAITING_META_LENGTH;
+                                }
+                                break;
+                            case WAITING_META_LENGTH:
+                                metaChunkLength = (buf[bufferConsumed] & 0xFF) * 16;
+                                bufferConsumed++;
+                                if (metaChunkLength != 0) {
+                                    decoderState = WAITING_METADATA;
+                                } else {
+                                    decoderState = WAITING_DATA;
+                                }
+                                stateByteCount = 0;
+                                break;
+                            case WAITING_METADATA:
+                                int metaToConsume = Math.min(bufferLen - bufferConsumed, metaChunkLength - stateByteCount);
+                                System.arraycopy(buf, bufferConsumed, metaBuffer, stateByteCount, metaToConsume);
+                                stateByteCount += metaToConsume;
+                                bufferConsumed += metaToConsume;
+
+                                if (metaChunkLength - stateByteCount == 0) {
+                                    decoderState = WAITING_DATA;
+                                    parseMetaBuf(metaBuffer, 0, metaChunkLength);
+                                    stateByteCount = 0;
+
+                                }
                         }
                     }
                 }
+                conn.disconnect();
                 Log.d(TAG, "spun down icy reader");
+            }
+
+            private void parseMetaBuf(byte[] metaBuffer, int offset, int length) {
+                try {
+                    String metaResult = new String(metaBuffer, offset, length, "UTF-8").trim();
+                    Log.d(TAG,"Meta result is "+ length + " bytes long, \"" + metaResult + "\'");
+                    int idx = metaResult.indexOf("StreamTitle='");
+                    if (idx == -1) {
+                        Log.e(TAG, "StreamTitle not part of the received data, so ignoring the whole meta block");
+                    } else {
+                        metaResult = metaResult.substring(idx + "StreamTitle='".length());
+                        idx = metaResult.indexOf("';");
+                        if (idx == -1) {
+                            Log.e(TAG, "End of StreamTitle missing. Ignoring the whole meta block.");
+                        } else {
+                            metaResult = metaResult.substring(0, idx);
+                            Log.d(TAG, "meta result is now " + metaResult);
+                            synchronized (streamTitleLock) {
+                                streamTitle = metaResult;
+                            }
+                            Intent metaRefresh = new Intent(SdlProxyHost.INTENT_METADATA_REFRESH);
+                            metaRefresh.putExtra("streamTitle", metaResult);
+                            StreamingService.this.getApplicationContext().sendBroadcast(metaRefresh);
+                        }
+                    }
+                } catch (UnsupportedEncodingException e) {
+                    Log.e(TAG, "couldn't convert metadata result to utf8, unsupported encoding exception", e);
+                }
             }
         }
         @Override
         public int read(byte[] buffer, int offset, int readLength) throws IOException {
             if (isIcy) {
-                int ret = 0;
-                while (!availableDataBytes.isEmpty() && readLength > 0) {
-                    Byte b = availableDataBytes.poll();
-                    buffer[offset++] = b;
-                    readLength--;
-                    ret++;
-                }
-                return ret;
+                return availableDataBytes.getInputStream().read(buffer, offset, readLength);
             } else {
                 return conn.getInputStream().read(buffer, offset, readLength);
             }
