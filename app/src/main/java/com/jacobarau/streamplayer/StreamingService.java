@@ -126,6 +126,13 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "onStartCommand with intent " + intent + ", flags " + flags + ", startId " + startId);
         NotificationManager mgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+        if (intent == null) {
+            Log.i(TAG, "onStartCommand: intent was null, disregarding");
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+
         if (intent.getAction().equals(ACTION_START)) {
             Log.i(TAG, "START received");
             Notification not = new Notification.Builder(this).setContentTitle("Stream Player")
