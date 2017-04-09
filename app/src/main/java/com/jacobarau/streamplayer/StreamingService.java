@@ -306,7 +306,6 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
                                     decoderState = WAITING_DATA;
                                     parseMetaBuf(metaBuffer, 0, metaChunkLength);
                                     stateByteCount = 0;
-
                                 }
                         }
                     }
