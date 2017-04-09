@@ -221,11 +221,12 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
                 Log.d(TAG, "ICY interval is " + icyDataChunkLength);
                 isIcy = true;
                 availableDataBytes = new CircularByteBuffer();
+                new Thread(new ReaderThread()).start();
             } else {
                 isIcy = false;
                 Log.d(TAG, "Server didn't give us an ICY interval; assuming non-ICY server.");
             }
-            new Thread(new ReaderThread()).start();
+
             return dataSpec.length;
         }
 
