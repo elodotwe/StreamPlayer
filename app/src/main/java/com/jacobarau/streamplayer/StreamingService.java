@@ -26,19 +26,11 @@ import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroupArray;
-import com.google.android.exoplayer2.trackselection.AdaptiveVideoTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
-import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
-import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
-import com.google.android.exoplayer2.upstream.HttpDataSource;
-import com.google.android.exoplayer2.util.Util;
 import com.jacobarau.streamplayer.sdl.SdlProxyHost;
 
 import java.io.IOException;
@@ -46,7 +38,6 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -59,11 +50,8 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
 
     SimpleExoPlayer player = null;
     public static boolean isStreaming = false;
-    private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
 
     DecoderCounters cntr = null;
-
-    private DataSource.Factory mediaDataSourceFactory;
 
     private final Object streamTitleLock = new Object();
     private String streamTitle = null;
@@ -98,30 +86,6 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
     public IBinder onBind(Intent intent) {
         // TODO: Return the communication channel to the service.
         throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-
-    /**
-     * Returns a new DataSource factory.
-     *
-     * @param useBandwidthMeter Whether to set {@link #BANDWIDTH_METER} as a listener to the new
-     *                          DataSource factory.
-     * @return A new DataSource factory.
-     */
-    private DataSource.Factory buildDataSourceFactory(boolean useBandwidthMeter) {
-        return new DefaultDataSourceFactory(this, useBandwidthMeter ? BANDWIDTH_METER : null,
-                buildHttpDataSourceFactory(useBandwidthMeter));
-    }
-
-    /**
-     * Returns a new HttpDataSource factory.
-     *
-     * @param useBandwidthMeter Whether to set {@link #BANDWIDTH_METER} as a listener to the new
-     *                          DataSource factory.
-     * @return A new HttpDataSource factory.
-     */
-    private HttpDataSource.Factory buildHttpDataSourceFactory(boolean useBandwidthMeter) {
-        return new DefaultHttpDataSourceFactory(Util.getUserAgent(this, "ExoPlayerDemo"), useBandwidthMeter ? BANDWIDTH_METER : null);
     }
 
     @Override
@@ -164,7 +128,7 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
             player = ExoPlayerFactory.newSimpleInstance(this, trackSelector, loadControl);
             player.setAudioDebugListener(this);
 
-            mediaDataSourceFactory = new IcyDataSourceFactory();
+            DataSource.Factory mediaDataSourceFactory = new IcyDataSourceFactory();
 
             MediaSource ms = new ExtractorMediaSource(Uri.parse(intent.getStringExtra("url")), mediaDataSourceFactory, new DefaultExtractorsFactory(),
                     mainHandler, null);
@@ -177,20 +141,26 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
 
         if (intent.getAction().equals(ACTION_STOP)) {
             Log.i(TAG, "STOP received!");
-            if (player != null) {
-                player.setPlayWhenReady(false);
-                player.stop();
-                player.release();
-                player = null;
-            }
-            mgr.cancel(1);
-            this.stopSelf();
+            spinDown();
+            return START_NOT_STICKY;
         }
 
         return START_STICKY;
     }
 
-    class IcyDataSourceFactory implements DataSource.Factory {
+    private void spinDown() {
+        NotificationManager mgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (player != null) {
+            player.setPlayWhenReady(false);
+            player.stop();
+            player.release();
+            player = null;
+        }
+        mgr.cancel(1);
+        this.stopSelf();
+    }
+
+    private class IcyDataSourceFactory implements DataSource.Factory {
 
         @Override
         public DataSource createDataSource() {
@@ -198,8 +168,7 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
         }
     }
 
-    class IcyDataSource implements DataSource {
-
+    private class IcyDataSource implements DataSource {
         Uri uri;
         URL url;
         HttpURLConnection conn;
@@ -277,6 +246,7 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
                                     availableDataBytes.getOutputStream().write(buf, bufferConsumed, dataToConsume);
                                 } catch (IOException e) {
                                     Log.e(TAG, "ReaderThread.run(): WAITING_DATA state unable to write data bytes to the circular byte buffer. Spinning down.", e);
+                                    dead = true;
                                     break readLoop;
                                 }
                                 stateByteCount += dataToConsume;
@@ -345,6 +315,10 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
         }
         @Override
         public int read(byte[] buffer, int offset, int readLength) throws IOException {
+            if (dead) {
+                throw new IOException("Read thread died for some reason (see logcat)");
+            }
+
             if (isIcy) {
                 return availableDataBytes.getInputStream().read(buffer, offset, readLength);
             } else {
@@ -399,11 +373,8 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
              */
             try {
                 Thread.sleep(500);
-            } catch (InterruptedException e) {
-                ;
-            }
+            } catch (InterruptedException ignored) { }
             player.setPlayWhenReady(true);
-
         }
     }
 
@@ -419,7 +390,9 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
 
     @Override
     public void onPlayerError(ExoPlaybackException error) {
-        Log.i(TAG, "Player onPlayerError " + error);
+        Log.e(TAG, "Player onPlayerError " + error, error);
+        spinDown();
+        //TODO: articulate this error to our UI (SDL or otherwise)...retry strategy?
     }
 
     @Override
