@@ -1,13 +1,16 @@
 package com.jacobarau.streamplayer;
 
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
@@ -15,7 +18,8 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StationListActivity extends AppCompatActivity {
+public class StationListActivity extends AppCompatActivity implements AddScreenDialog.AddScreenListener {
+    private static final String TAG = "StationListActivity";
     StationListPresenter presenter;
 
     private RecyclerView mRecyclerView;
@@ -40,9 +44,16 @@ public class StationListActivity extends AppCompatActivity {
         mAdapter = new MyAdapter(new ArrayList<String>());
         mRecyclerView.setAdapter(mAdapter);
 
-        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(myToolbar);
 
+        FloatingActionButton myFab = (FloatingActionButton)  findViewById(R.id.addButton);
+        myFab.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                AddScreenDialog dialog = new AddScreenDialog();
+                dialog.show(getSupportFragmentManager(), "add_stream");
+            }
+        });
     }
 
     @Override
@@ -78,6 +89,11 @@ public class StationListActivity extends AppCompatActivity {
 
     public void setStationList(List<String> stationList) {
         mAdapter.updateStations(stationList);
+    }
+
+    @Override
+    public void onDialogPositiveClick(String url, String name) {
+        Log.i(TAG, "onDialogPositiveClick: " + url + ", " + name);
     }
 
     class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
