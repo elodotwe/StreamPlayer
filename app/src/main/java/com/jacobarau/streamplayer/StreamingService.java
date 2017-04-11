@@ -149,11 +149,16 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
     }
 
     private void spinDown() {
+        Log.i(TAG, "spinDown: starting spin down");
         NotificationManager mgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (player != null) {
+            Log.i(TAG, "spinDown: player is not null. setting play-when-ready to false");
             player.setPlayWhenReady(false);
+            Log.i(TAG, "spinDown: Stopping playback");
             player.stop();
+            Log.i(TAG, "spinDown: Releasing player");
             player.release();
+            Log.i(TAG, "spinDown: player released");
             player = null;
         }
         mgr.cancel(1);
@@ -182,8 +187,11 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
         public long open(DataSpec dataSpec) throws IOException {
             uri = dataSpec.uri;
             url = new URL(uri.toString());
+            Log.i(TAG, "open: Trying to open connection to " + url);
             conn = (HttpURLConnection)url.openConnection();
             conn.setRequestProperty("Icy-MetaData","1");
+            conn.setConnectTimeout(3000);
+            conn.setReadTimeout(3000);
             conn.connect();
             if (conn.getHeaderField("icy-metaint") != null) {
                 icyDataChunkLength = Integer.valueOf(conn.getHeaderField("icy-metaint"));
@@ -316,6 +324,7 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
         @Override
         public int read(byte[] buffer, int offset, int readLength) throws IOException {
             if (dead) {
+                Log.i(TAG, "read: Dead, so throwing exception");
                 throw new IOException("Read thread died for some reason (see logcat)");
             }
 
