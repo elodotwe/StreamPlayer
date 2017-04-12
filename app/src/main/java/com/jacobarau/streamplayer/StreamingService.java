@@ -290,6 +290,11 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
                     }
                 }
                 conn.disconnect();
+                try {
+                    availableDataBytes.getInputStream().close();
+                } catch (IOException e) {
+                    Log.e(TAG, "run: Unable to close available data bytes input stream", e);
+                }
                 Log.d(TAG, "spun down icy reader");
             }
 
