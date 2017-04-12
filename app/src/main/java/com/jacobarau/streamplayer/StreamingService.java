@@ -31,7 +31,6 @@ import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
-import com.jacobarau.streamplayer.sdl.SdlProxyHost;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -316,7 +315,7 @@ public class StreamingService extends Service implements ExoPlayer.EventListener
                             synchronized (streamTitleLock) {
                                 streamTitle = metaResult;
                             }
-                            Intent metaRefresh = new Intent(SdlProxyHost.INTENT_METADATA_REFRESH);
+                            Intent metaRefresh = new Intent(SharedIntents.INTENT_METADATA_REFRESH);
                             metaRefresh.putExtra("streamTitle", metaResult);
                             StreamingService.this.getApplicationContext().sendBroadcast(metaRefresh);
                         }

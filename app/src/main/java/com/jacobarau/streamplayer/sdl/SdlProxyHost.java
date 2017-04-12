@@ -6,9 +6,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
 
-import com.jacobarau.streamplayer.MainActivity;
 import com.jacobarau.streamplayer.PrefsManager;
 import com.jacobarau.streamplayer.R;
+import com.jacobarau.streamplayer.SharedIntents;
 import com.jacobarau.streamplayer.StationPreset;
 import com.jacobarau.streamplayer.StreamingService;
 import com.smartdevicelink.exception.SdlException;
@@ -95,6 +95,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.jacobarau.streamplayer.SharedIntents.INTENT_METADATA_REFRESH;
+
 /**
  * Created by jacob on 12/25/16.
  */
@@ -137,8 +139,6 @@ public class SdlProxyHost implements IProxyListenerALM {
 
     Context context = null;
 
-    public static final String INTENT_METADATA_REFRESH = "com.jacobarau.streamplayer.metadata_refresh";
-
     class MetadataChangeReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -150,6 +150,14 @@ public class SdlProxyHost implements IProxyListenerALM {
         }
     }
 
+    class ActivityShownReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.i(TAG, "onReceive: Activity shown, current lock screen status is " + lockscreenDisplayed);
+            showLockScreen(lockscreenDisplayed);
+        }
+    }
+
     public SdlProxyHost(Context context) {
         this.context = context;
         PrefsManager mgr = new PrefsManager(context);
@@ -158,6 +166,7 @@ public class SdlProxyHost implements IProxyListenerALM {
         currentPreset = presets.get(0);
 
         context.registerReceiver(new MetadataChangeReceiver(), new IntentFilter(INTENT_METADATA_REFRESH));
+        context.registerReceiver(new ActivityShownReceiver(), new IntentFilter(SharedIntents.INTENT_ACTIVITY_STARTED));
     }
 
     public boolean startProxy() {
@@ -186,7 +195,7 @@ public class SdlProxyHost implements IProxyListenerALM {
                 e.printStackTrace();
             }
             proxy = null;
-            //LockScreenManager.clearLockScreen();
+            showLockScreen(false);
         }
         this.firstNonHmiNone = true;
 
@@ -315,7 +324,7 @@ public class SdlProxyHost implements IProxyListenerALM {
             }
         }
 
-        clearLockScreen();
+        showLockScreen(false);
 
         StreamingService.stopPlaying(context);
 
@@ -458,22 +467,22 @@ public class SdlProxyHost implements IProxyListenerALM {
     @Override
     public void onOnLockScreenNotification(OnLockScreenStatus notification) {
         if (!lockscreenDisplayed && notification.getShowLockScreen() == LockScreenStatus.REQUIRED) {
-            // Show lock screen
-            Intent intent = new Intent(context.getApplicationContext(), LockScreenActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_TASK);
+            showLockScreen(true);
             lockscreenDisplayed = true;
-            context.startActivity(intent);
         } else if (lockscreenDisplayed && notification.getShowLockScreen() != LockScreenStatus.REQUIRED) {
-            // Clear lock screen
-            clearLockScreen();
+            showLockScreen(false);
+            lockscreenDisplayed = false;
         }
     }
 
-    private void clearLockScreen() {
-        Intent intent = new Intent(context.getApplicationContext(), MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(intent);
-        lockscreenDisplayed = false;
+    private void showLockScreen(boolean show) {
+        if (show) {
+            Intent metaRefresh = new Intent(SharedIntents.INTENT_LOCK_SCREEN_REQUIRED);
+            context.getApplicationContext().sendBroadcast(metaRefresh);
+        } else {
+            Intent metaRefresh = new Intent(SharedIntents.INTENT_LOCK_SCREEN_NOT_REQUIRED);
+            context.getApplicationContext().sendBroadcast(metaRefresh);
+        }
     }
 
     @Override
